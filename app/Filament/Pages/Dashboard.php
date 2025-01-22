@@ -22,15 +22,17 @@ class Dashboard extends Page
     public function mount()
     {
         // Set default date range (e.g., last 30 days)
-        $this->startDate = now()->subDays(30)->format('Y-m-d');
-        $this->endDate = now()->format('Y-m-d');
-        $this->status = null;
+        $this->startDate = request()->query('startDate', now()->subDays(30)->format('Y-m-d'));
+        $this->endDate = request()->query('endDate', now()->format('Y-m-d'));
+        $this->status = request()->query('status', null);
+    
     }
 
     public function getStats()
     {
         $query = Service::query();
-
+        
+     //  dd($this->startDate);
         // Apply filters
         if ($this->startDate) {
             $query->whereDate('created_at', '>=', $this->startDate);
@@ -70,6 +72,7 @@ class Dashboard extends Page
     }
     public function getCustomerRevenueData()
     {
+    //    dd($this->startDate);
         $data = Service::selectRaw('customers.name as customer, SUM(amount_offer_revision) as total_revenue')
             ->join('customers', 'services.customer_id', '=', 'customers.id')
             ->groupBy('customers.name')
@@ -160,4 +163,34 @@ class Dashboard extends Page
             'servicePercentage' => $servicePercentage,
         ];
     }
+    public function getFilteredStats()
+    {
+        $startDate = request()->query('start_date');
+        $endDate = request()->query('end_date');
+        $status = request()->query('status');
+
+        // Query data based on filters
+        $query = Order::query();
+
+        if ($startDate) {
+            $query->whereDate('created_at', '>=', $startDate);
+        }
+
+        if ($endDate) {
+            $query->whereDate('created_at', '<=', $endDate);
+        }
+
+        if ($status) {
+            $query->where('status', $status);
+        }
+
+        return [
+            'revenue' => $query->sum('total_price'),
+            'newCustomers' => $query->distinct('customer_id')->count(),
+            'totalServices' => $query->count(),
+        ];
+    }
+
+
+
 }

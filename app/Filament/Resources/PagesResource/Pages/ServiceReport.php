@@ -19,6 +19,8 @@ class ServiceReport extends Page
     protected static ?string $navigationIcon = 'heroicon-o-document-report';
 
     protected static ?string $navigationLabel = 'Service Report';
+    protected static ?string $navigationGroup = 'Report';
+
 
     public $filters = [
         'customer_id' => null,

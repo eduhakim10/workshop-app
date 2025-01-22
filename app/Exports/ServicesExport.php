@@ -28,6 +28,7 @@ class ServicesExport implements FromCollection, WithHeadings
                 return [
                     $service->customer->name ?? '-',
                     $service->vehicle->license_plate ?? '-',
+                    $service->vehicle->karoseri ?? '-',
                     $service->offer_number ?? '-',
                     $service->amount_offer ?? '-',
                     $service->amount_offer_revision ?? '-',
@@ -51,7 +52,8 @@ class ServicesExport implements FromCollection, WithHeadings
     {
         return [
             'Customer Name',
-            'Vehicle',
+            'No Pol',
+            'Karoseri',
             'Offer Number',
             'Amount Offer',
             'Amount Offer Revision',

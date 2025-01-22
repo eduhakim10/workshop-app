@@ -30,12 +30,15 @@ use Filament\Tables\Filters\TextFilter;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Columns\BadgeColumn;
 use Filament\Forms\Components\TimePicker;
+use Illuminate\Support\Facades\Log;
+
 
 class ServiceResource extends Resource
 {
     protected static ?string $model = Service::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationGroup = 'Services Management';
 
     public static function form(Form $form): Form
     {
@@ -134,67 +137,60 @@ class ServiceResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-        ->columns([
-            TextColumn::make('customer.name')->label('Customer')->searchable(),
-            TextColumn::make('vehicle.license_plate')->label('License Plate')->searchable(),
-            TextColumn::make('location.name')->label('Location'), // New column for Location
-            TextColumn::make('employee.name')->label('Assign'),
-            TextColumn::make('service_start_date')->date(),
-            TextColumn::make('service_due_date')->date(),
-            TextColumn::make('service_start_time')->time(),
-            TextColumn::make('service_due_time')->time(),
-            BadgeColumn::make('status')
-            ->label('Status')
-            ->color(fn ($state): string => match ($state) {
-                'Scheduled' => 'blue',
-                'Completed' => 'green',
-                'Cancelled' => 'red',
-                'In Progress' => 'orange',
-                default => 'gray',
-            })
-            ->sortable(),
-        ])
-        ->filters([
-            Filter::make('license_plate')
-            ->label('License Plate')
-            ->query(function (Builder $query, $data) {
-                if (!empty($data['license_plate'])) {
-                    $query->whereHas('vehicle', function ($vehicleQuery) use ($data) {
-                        $vehicleQuery->where('license_plate', 'like', '%' . $data['license_plate'] . '%');
-                    });
-                }
-            })
-            ->form([
-                TextInput::make('license_plate')
+            ->columns([
+                TextColumn::make('customer.name')->label('Customer')->searchable(),
+                TextColumn::make('vehicle.license_plate')->label('License Plate')->searchable(),
+                TextColumn::make('location.name')->label('Location'), // New column for Location
+                TextColumn::make('employee.name')->label('Assign'),
+                TextColumn::make('duration')
+                ->label('Duration')
+                ->formatStateUsing(fn ($record) => 
+                ($record->service_start_date) 
+                ? "{$record->service_start_date} {$record->service_start_time}<br>{$record->service_due_date} {$record->service_due_time}"
+                : 'N/A'
+                )
+                ->default('NOT EMPTY') // Force column to always have a value
+                ->html(),
+            
+            
+                        
+            
+            
+                BadgeColumn::make('status')
+                    ->label('Status')
+                    ->color(fn ($state): string => match ($state) {
+                        'Scheduled' => 'blue',
+                        'Completed' => 'green',
+                        'Cancelled' => 'red',
+                        'In Progress' => 'orange',
+                        default => 'gray',
+                    })
+                    ->sortable(),
+            ])
+            ->filters([
+                Filter::make('license_plate')
                     ->label('License Plate')
-                    ->placeholder('Enter License Plate'),
-            ]),
-            SelectFilter::make('customer_id')
-            ->label('Customer')
-            ->options(Customer::pluck('name', 'id')->toArray()),
-            // SelectFilter::make('customer_id')
-            // ->label('Customer')
-            // ->options(Customer::pluck('name', 'id')->toArray())
-            // ->apply(function (Builder $query, $value) {
-            //     $query->where('customer_id', '=', $value);
-            // }),
-
-        
-        
-        
-        
-        
-        
-        
-        
-
-        ])
-        ->actions([
-            Tables\Actions\EditAction::make(),
-
-        ]);
-       
+                    ->query(function (Builder $query, $data) {
+                        if (!empty($data['license_plate'])) {
+                            $query->whereHas('vehicle', function ($vehicleQuery) use ($data) {
+                                $vehicleQuery->where('license_plate', 'like', '%' . $data['license_plate'] . '%');
+                            });
+                        }
+                    })
+                    ->form([
+                        TextInput::make('license_plate')
+                            ->label('License Plate')
+                            ->placeholder('Enter License Plate'),
+                    ]),
+                SelectFilter::make('customer_id')
+                    ->label('Customer')
+                    ->options(Customer::pluck('name', 'id')->toArray()),
+            ])
+            ->actions([
+                Tables\Actions\EditAction::make(),
+            ]);
     }
+    
 
     public static function getRelations(): array
     {
@@ -202,7 +198,12 @@ class ServiceResource extends Resource
             //
         ];
     }
-
+    public static function canCreate(): bool
+    {
+     //   dd($this->role);
+  //   dd(auth()->user()->can('create users'));
+        return auth()->user()->can('create users');
+    }
     public static function getPages(): array
     {
         return [

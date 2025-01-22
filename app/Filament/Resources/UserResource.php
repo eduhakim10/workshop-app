@@ -24,6 +24,7 @@ class UserResource extends Resource
     protected static ?string $model = User::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationGroup = 'Users Management';
 
     public static function canViewAny(): bool
     {
@@ -74,7 +75,11 @@ class UserResource extends Resource
                 TextColumn::make('id')->sortable(),
                 TextColumn::make('name')->searchable(),
                 TextColumn::make('email')->searchable(),
-                TextColumn::make('role')->sortable()->searchable(),
+                TextColumn::make('roles.name')
+                ->label('Role')
+                ->formatStateUsing(fn ($record) => $record->roles->pluck('name')->join(', ')) // Get role names
+                ->sortable()
+                ->searchable(),
                 TextColumn::make('employee.id_employee') // Show employee ID (from relationship)
                 ->label('Employee ID')
                 ->sortable(),

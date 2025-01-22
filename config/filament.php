@@ -2,6 +2,17 @@
 
 return [
 
+
+   'theme' => [
+    'colors' => [
+        'primary' => '#FF0000', // Fresh red
+        'secondary' => '#FF5733', // A lighter red or orange
+        'success' => '#28A745', // Green for success messages
+        'danger' => '#DC3545', // Red for danger messages
+        'warning' => '#FFC107', // Yellow for warnings
+        'info' => '#17A2B8', // Blue for informational messages
+    ],
+],
     /*
     |--------------------------------------------------------------------------
     | Broadcasting

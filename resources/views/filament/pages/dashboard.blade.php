@@ -1,4 +1,43 @@
 <x-filament::page>
+<div class="mb-6 p-4 bg-white shadow rounded-lg">
+    <form method="GET" id="filterForm" class="flex flex-wrap items-end gap-4">
+        <!-- Start Date -->
+        <div class="flex flex-col">
+            <label for="start_date" class="text-sm font-medium text-gray-700">Start Date</label>
+            <input type="date" id="startDate" name="startDate" 
+                   class="w-48 p-2 border rounded-md">
+        </div>
+
+        <!-- End Date -->
+        <div class="flex flex-col">
+            <label for="end_date" class="text-sm font-medium text-gray-700">End Date</label>
+            <input type="date" id="endDate'" name="endDate'" 
+                   class="w-48 p-2 border rounded-md">
+        </div>
+
+        <!-- Status of Service -->
+        <div class="flex flex-col">
+            <label for="status" class="text-sm font-medium text-gray-700">Status</label>
+            <select id="status" name="status" class="w-48 p-2 border rounded-md">
+                <option value="">All</option>
+                <option value="pending">Pending</option>
+                <option value="completed">Completed</option>
+                <option value="canceled">Canceled</option>
+            </select>
+        </div>
+
+        <!-- Button: Ensure it stays visible -->
+        <div class="flex items-end">
+            <button type="submit" 
+                    class="px-4 py-2 text-blue-500 border border-blue-500 rounded-md hover:bg-blue-500 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-300">
+                Apply Filter
+            </button>
+        </div>
+
+    </form>
+</div>
+
+
     <!-- Stats Overview -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <x-filament::card>
@@ -150,6 +189,9 @@
         canvas {
     max-height: 400px !important; /* Set a reasonable max height */
     width: 100% !important; /* Ensure full width */
+}
+.bg-blue-500 {
+    background-color: #3b82f6 !important;
 }
     </style>
 </x-filament::page>

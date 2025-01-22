@@ -13,6 +13,7 @@ class Vehicle extends Model
         'customer_id',
         'type',
         'brand',
+        'karoseri',
         'model',
         'license_plate',
         'color',

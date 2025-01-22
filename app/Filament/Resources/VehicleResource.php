@@ -67,6 +67,9 @@ class VehicleResource extends Resource
             TextInput::make('brand')->required(),
             TextInput::make('model')->required(),
             TextInput::make('license_plate')->required()->unique(ignoreRecord: true),
+            TextInput::make('karoseri') 
+            ->label('Karoseri')
+            ->maxLength(255),
             TextInput::make('color'),
             TextInput::make('engine_type'),
             TextInput::make('chassis_number'),
