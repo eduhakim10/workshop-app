@@ -4,19 +4,20 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Location extends Model
+class Room extends Model
 {
     use HasFactory;
 
+    protected $table = 'rooms';
+
     protected $fillable = [
         'name',
-        'address',
-        'phone',
-        'email',
+        'description',
     ];
 
-    public function services()
+    // Relasi ke Meeting
+    public function meetings()
     {
-        return $this->hasMany(Service::class);
+        return $this->hasMany(Meeting::class);
     }
 }

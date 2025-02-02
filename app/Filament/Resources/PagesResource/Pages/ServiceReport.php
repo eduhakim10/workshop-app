@@ -36,14 +36,26 @@ class ServiceReport extends Page
     }
 
     protected function getForms(): array
-    {
+    { 
         return [
             Forms\Components\Form::make('filters')
                 ->schema([
+                    Forms\Components\Select::make('location_id')
+                    ->label('Location')
+                    ->options(\App\Models\Customer::pluck('name', 'id'))
+                    ->placeholder('All Location'),
+
                     Forms\Components\Select::make('customer_id')
-                        ->label('Customer')
+                        ->label('Customerku')
                         ->options(\App\Models\Customer::pluck('name', 'id'))
                         ->placeholder('All Customers'),
+                        
+                
+                        // Select::make('location_id')
+                        // ->label('Location')
+                        // ->relationship('location', 'name') // Assuming the Location model has a `name` field
+                        // ->required(),
+
 
                     Forms\Components\Select::make('status')
                         ->label('Status')

@@ -10,6 +10,7 @@ use Maatwebsite\Excel\Facades\Excel;
 use Filament\Actions\Action;
 use App\Models\Service;
 use App\Models\Customer;
+use App\Models\Location;
 use App\Models\Vehicle;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -25,6 +26,7 @@ class ServiceReport extends Page
     protected static string $view = 'filament.pages.service-report';
 
     public $customer_id;
+    public $location_id;
     public $vehicle_id;
     public $status;
     public $start_date;
@@ -36,6 +38,13 @@ class ServiceReport extends Page
     protected function getFormSchema(): array
     {
         return [
+
+            Forms\Components\Select::make('location_id')
+            ->label('Location')
+            ->options(\App\Models\Location::pluck('name', 'id'))
+            ->searchable()
+            ->reactive(),
+
             Forms\Components\Select::make('customer_id')
             ->label('Customer')
             ->options(\App\Models\Customer::pluck('name', 'id'))
@@ -92,6 +101,7 @@ class ServiceReport extends Page
     {
         $filters = [
             'customer_id' => $this->customer_id,
+            'location_id' => $this->location_id,
             'vehicle_id' => $this->vehicle_id,
             'status' => $this->status,
             'start_date' => $this->start_date,
@@ -110,4 +120,8 @@ class ServiceReport extends Page
     //         'form' => $this->form,
     //     ]);
     // }
+    public static function canViewAny(): bool
+    {
+        return auth()->user()->can('view reports');
+    }
 }

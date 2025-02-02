@@ -106,6 +106,10 @@ class EmployeeResource extends Resource
     {
         return auth()->user()->can('delete employees');
     }
+    public static function canViewAny(): bool
+    {
+        return auth()->user()->can('view employees');
+    }
 
 
 

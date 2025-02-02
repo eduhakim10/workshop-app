@@ -191,6 +191,10 @@ class Dashboard extends Page
         ];
     }
 
+    public static function canViewAny(): bool
+    {
+        return auth()->user()->can('view dashboard');
+    }
 
 
 }

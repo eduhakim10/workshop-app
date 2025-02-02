@@ -5,6 +5,7 @@ use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use App\Models\Service;
 use App\Models\Customer;
+use App\Models\Location;
 use App\Models\Vehicle;
 
 class ServicesExport implements FromCollection, WithHeadings
@@ -19,6 +20,7 @@ class ServicesExport implements FromCollection, WithHeadings
     public function collection()
     {
         return Service::with(['customer', 'vehicle', 'assignTo'])
+            ->when($this->filters['location_id'] ?? null, fn ($query, $locationId) => $query->where('location_id', $locationId))
             ->when($this->filters['customer_id'] ?? null, fn ($query, $customerId) => $query->where('customer_id', $customerId))
             ->when($this->filters['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
             ->when($this->filters['start_date'] ?? null, fn ($query, $startDate) => $query->whereDate('created_at', '>=', $startDate))
@@ -26,6 +28,7 @@ class ServicesExport implements FromCollection, WithHeadings
             ->get()
             ->map(function ($service) {
                 return [
+                    $service->location->name ?? '-',
                     $service->customer->name ?? '-',
                     $service->vehicle->license_plate ?? '-',
                     $service->vehicle->karoseri ?? '-',
@@ -51,6 +54,7 @@ class ServicesExport implements FromCollection, WithHeadings
     public function headings(): array
     {
         return [
+            'Location',
             'Customer Name',
             'No Pol',
             'Karoseri',

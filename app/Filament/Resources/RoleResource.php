@@ -36,7 +36,11 @@ class RoleResource extends Resource
                 ->helperText('Select permissions for this role.'),
         ]);
     }
-
+    public static function canViewAny(): bool
+    {
+        return auth()->user()->hasRole('Admin');
+    }
+    
     public static function table(Table $table): Table
     {
         return $table

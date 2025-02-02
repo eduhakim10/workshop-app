@@ -117,5 +117,9 @@ class ItemResource extends Resource
             ]);
         }
     }
+    public static function canViewAny(): bool
+    {
+        return auth()->user()->can('view items');
+    }
 
 }
