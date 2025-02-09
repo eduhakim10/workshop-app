@@ -6,6 +6,7 @@ use App\Filament\Resources\ServiceResource\Pages;
 use App\Filament\Resources\ServiceResource\RelationManagers;
 use App\Models\Service;
 use App\Models\Vehicle;
+use App\Models\CategoryItem;
 use App\Models\Item;
 use App\Models\Customer; 
 use Filament\Forms;
@@ -97,13 +98,26 @@ class ServiceResource extends Resource
                 ->required(),
             Textarea::make('notes'),
 
+          
+
             // Items Table
             Repeater::make('items')
             ->label('Items')
             ->schema([
+                Select::make('category_item_id')
+                ->label('Item Category')
+                ->options(CategoryItem::pluck('name', 'id'))
+                ->reactive()
+                ->searchable()
+                ->required(),
+                
                 Forms\Components\Select::make('item_id')
                     ->label('Item')
-                    ->options(Item::all()->pluck('name', 'id'))
+                    ->options(fn (callable $get) => 
+                    $get('category_item_id') 
+                        ? Item::where('category_item_id', $get('category_item_id'))->pluck('name', 'id') 
+                        : []
+                    )
                     ->reactive()
                     ->afterStateUpdated(function ($state, callable $set) {
                         if ($state) {
@@ -111,22 +125,27 @@ class ServiceResource extends Resource
                             $set('sales_price', $item ? $item->sales_price : null);
                         }
                     })
+                    ->searchable()
+                    ->columnSpan(1)
                     ->required(),
 
                 Forms\Components\TextInput::make('sales_price')
                     ->label('Sales Price')
                     ->numeric()
                     ->required()
-                    ->prefix('$'),
+                    ->prefix('Rp'),
                 
                 Forms\Components\TextInput::make('quantity')
                     ->label('Quantity')
                     ->numeric()
                     ->default(1)
                     ->required()
-                    ->suffix('pcs'),
+                    ->columnSpan(1)
+                    ->suffix(fn (callable $get) => 
+                    optional(Item::find($get('item_id')))->unit ?? 'pcs'
+                    ),
             ])
-            ->columns(3)
+            ->columns(4)
             ->collapsible()
             ->defaultItems(1)
             ->columnSpan('full')
@@ -151,11 +170,6 @@ class ServiceResource extends Resource
                 )
                 ->default('NOT EMPTY') // Force column to always have a value
                 ->html(),
-            
-            
-                        
-            
-            
                 BadgeColumn::make('status')
                     ->label('Status')
                     ->color(fn ($state): string => match ($state) {

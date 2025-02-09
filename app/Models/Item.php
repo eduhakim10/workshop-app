@@ -24,6 +24,7 @@ class Item extends Model
         'manufacturer_by',
         'warranty_information',
         'notes',
+        'category_item_id', 
     ];
 
     /**
@@ -44,6 +45,7 @@ class Item extends Model
     // Example relationship: If items are associated with a category or inventory
     public function category()
     {
-        return $this->belongsTo(Category::class);
+        return $this->belongsTo(CategoryItem::class, 'category_item_id');
     }
+    
 }

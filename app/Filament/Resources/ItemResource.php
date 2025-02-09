@@ -18,6 +18,8 @@ use Filament\Forms\Components\Select;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\DatePicker;
+use App\Models\CategoryItem;
+
 
 
 class ItemResource extends Resource
@@ -31,17 +33,17 @@ class ItemResource extends Resource
     {
         return $form
         ->schema([
-            TextInput::make('name')
-                ->required()
-                ->maxLength(255),
-            TextInput::make('item_code')
-                ->label('Item Code')
-                ->required()
-                ->unique(ignoreRecord: true),
-            TextInput::make('quantity')
-                ->numeric()
-                ->required()
-                ->minValue(0),
+            Select::make('category_item_id')
+            ->label('Category')
+            ->options(CategoryItem::pluck('name', 'id')) // Ambil kategori dari tabel category_items
+            ->searchable()
+            ->preload()
+            ->required(),
+        
+
+            TextInput::make('name')->required()->maxLength(255),
+            TextInput::make('item_code')->label('Item Code')->required()->unique(ignoreRecord: true),
+            TextInput::make('quantity')->numeric()->required()->minValue(0),
             Select::make('unit')
                 ->options([
                     'pcs' => 'Pieces',
@@ -49,20 +51,10 @@ class ItemResource extends Resource
                     'liters' => 'Liters',
                 ])
                 ->required(),
-            TextInput::make('purchase_price')
-                ->label('Purchase Price')
-                ->numeric()
-                ->required(),
-                TextInput::make('sales_price')
-                ->numeric()
-                ->required()
-                ->label('Sales Price')
-                ->extraAttributes(['class' => 'price-input']),
-
-            TextInput::make('manufacturer_by')
-                ->label('Manufacturer By'),
-            Textarea::make('warranty_information')
-                ->label('Warranty Information'),
+            TextInput::make('purchase_price')->label('Purchase Price')->numeric()->required(),
+            TextInput::make('sales_price')->numeric()->required()->label('Sales Price')->extraAttributes(['class' => 'price-input']),
+            TextInput::make('manufacturer_by')->label('Manufacturer By'),
+            Textarea::make('warranty_information')->label('Warranty Information'),
             Textarea::make('notes'),
         ]);
     }
@@ -71,6 +63,7 @@ class ItemResource extends Resource
     {
         return $table
         ->columns([
+             TextColumn::make('category.name')->label('Category')->sortable()->searchable(),
             TextColumn::make('name')->searchable()->sortable(),
             TextColumn::make('item_code')->label('Item Code')->sortable(),
             TextColumn::make('quantity')->sortable(),
