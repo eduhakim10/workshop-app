@@ -21,7 +21,8 @@ class CategoryItemResource extends Resource
     protected static ?string $model = CategoryItem::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-tag';
-    protected static ?string $navigationGroup = 'Management';
+    protected static ?string $navigationGroup = 'Inventory Management'; // Optional grouping
+
 
     public static function form(Forms\Form $form): Forms\Form
     {
