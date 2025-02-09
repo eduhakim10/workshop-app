@@ -55,11 +55,13 @@ class ServiceResource extends Resource
                 ->label('Customer')
                 ->relationship('customer', 'name')
                 ->reactive()
+                ->searchable()
                 ->required(),
 
             Select::make('vehicle_id')
                 ->label('Vehicle')
                 ->options(fn (callable $get) => Vehicle::where('customer_id', $get('customer_id'))->pluck('license_plate', 'id'))
+                ->searchable()
                 ->required(),
             Select::make('category_service_id')
                 ->label('Category Service')
@@ -142,7 +144,7 @@ class ServiceResource extends Resource
                     ->required()
                     ->columnSpan(1)
                     ->suffix(fn (callable $get) => 
-                    optional(Item::find($get('item_id')))->unit ?? 'pcs'
+                        optional(Item::find($get('item_id')))->unit ?? 'pcs'
                     ),
             ])
             ->columns(4)
