@@ -57,9 +57,9 @@ class VehicleResource extends Resource
             Select::make('type')
             ->label('Type')
             ->options([
-                'car' => 'Wing Box',
-                'motorcycle' => 'Non Wing Box',
-                'truck' => 'DumpTruck',
+                'Wing Box' => 'Wing Box',
+                'Non Wing Box' => 'Non Wing Box',
+                'DumpTruck' => 'DumpTruck',
                 'other' => 'Other',
             ])
             ->required()
