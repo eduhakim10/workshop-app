@@ -6,6 +6,8 @@ use Filament\Pages\Page;
 use Illuminate\Support\Facades\DB;
 use App\Models\Service;
 use App\Models\Customer;
+use App\Models\CategoryService; // Import CategoryService model
+
 
 class Dashboard extends Page
 {
@@ -25,6 +27,8 @@ class Dashboard extends Page
         $this->startDate = request()->query('startDate', now()->subDays(30)->format('Y-m-d'));
         $this->endDate = request()->query('endDate', now()->format('Y-m-d'));
         $this->status = request()->query('status', null);
+        $this->categoryServiceId = request()->query('categoryServiceId', null); // Capture category_services_id
+
     
     }
 
@@ -35,15 +39,19 @@ class Dashboard extends Page
      //  dd($this->startDate);
         // Apply filters
         if ($this->startDate) {
-            $query->whereDate('created_at', '>=', $this->startDate);
+            $query->whereDate('service_start_date', '>=', $this->startDate);
         }
 
         if ($this->endDate) {
-            $query->whereDate('created_at', '<=', $this->endDate);
+            $query->whereDate('service_start_date', '<=', $this->endDate);
         }
 
         if ($this->status) {
             $query->where('status', $this->status);
+        }
+
+        if ($this->categoryServiceId) {
+            $query->where('category_services_id', $this->categoryServiceId);
         }
 
         $revenue = $query->sum('amount_offer_revision');
@@ -115,15 +123,19 @@ class Dashboard extends Page
 
         // Apply filters
         if ($this->startDate) {
-            $query->whereDate('created_at', '>=', $this->startDate);
+            $query->whereDate('service_start_date', '>=', $this->startDate);
         }
 
         if ($this->endDate) {
-            $query->whereDate('created_at', '<=', $this->endDate);
+            $query->whereDate('service_start_date', '<=', $this->endDate);
         }
 
         if ($this->status) {
             $query->where('status', $this->status);
+        }
+
+        if ($this->categoryServiceId) {
+            $query->where('category_services_id', $this->categoryServiceId);
         }
 
         // Bar Chart: Revenue by Location
@@ -173,15 +185,19 @@ class Dashboard extends Page
         $query = Order::query();
 
         if ($startDate) {
-            $query->whereDate('created_at', '>=', $startDate);
+            $query->whereDate('service_start_date', '>=', $startDate);
         }
 
         if ($endDate) {
-            $query->whereDate('created_at', '<=', $endDate);
+            $query->whereDate('service_start_date', '<=', $endDate);
         }
 
         if ($status) {
             $query->where('status', $status);
+        }
+
+        if ($this->categoryServiceId) {
+            $query->where('category_services_id', $this->categoryServiceId);
         }
 
         return [
@@ -191,6 +207,11 @@ class Dashboard extends Page
         ];
     }
 
+
+    public function getCategoryServices()
+    {
+        return CategoryService::pluck('name', 'id'); // Get categories as [id => name]
+    }
     public static function canViewAny(): bool
     {
         return auth()->user()->can('view dashboard');

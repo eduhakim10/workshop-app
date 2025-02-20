@@ -26,6 +26,19 @@
             </select>
         </div>
 
+        <div class="flex flex-col">
+        <label for="category_services_id" class="block text-sm font-medium text-gray-700">Category Services</label>
+            <select id="category_services_id" name="categoryServiceId" class="p-2 border rounded w-full">
+                <option value="">All Categories</option>
+                @foreach ($this->getCategoryServices() as $id => $name)
+                    <option value="{{ $id }}" {{ request('categoryServiceId') == $id ? 'selected' : '' }}>
+                        {{ $name }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+
+
         <!-- Button: Ensure it stays visible -->
         <div class="flex items-end">
             <button type="submit" 
