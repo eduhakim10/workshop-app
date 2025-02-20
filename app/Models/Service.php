@@ -9,6 +9,7 @@ class Service extends Model
     use HasFactory;
 
     protected $fillable = [
+        'location_id',
         'customer_id',
         'vehicle_id',
         'category_service_id',
@@ -57,7 +58,7 @@ class Service extends Model
     }
     public function location()
     {
-        return $this->belongsTo(Location::class);
+        return $this->belongsTo(Location::class, 'location_id');
     }
     public function categoryService()
     {
