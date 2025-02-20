@@ -46,6 +46,9 @@ class ItemResource extends Resource
             TextInput::make('quantity')->numeric()->required()->minValue(0),
             Select::make('unit')
                 ->options([
+                    'pcs' => 'Pieces',
+                    'kg' => 'Kilograms',
+                    'liters' => 'Liters',
                     'Lembar' => 'Lembar',
                     'Meter' => 'Meter',
                     'Jam' => 'Jam',
