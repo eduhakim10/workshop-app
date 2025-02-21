@@ -3,16 +3,16 @@
     <form method="GET" id="filterForm" class="flex flex-wrap items-end gap-4">
         <!-- Start Date -->
         <div class="flex flex-col">
-            <label for="start_date" class="text-sm font-medium text-gray-700">Start Date</label>
-            <input type="date" id="startDate" name="startDate" 
+            <label for="start_date" class="text-sm font-medium text-gray-700">Start Date </label>
+            <input type="date" id="startDate" value="{{ old('startDate', request('startDate', now()->subDays(30)->format('Y-m-d'))) }}"  name="startDate" 
                    class="w-48 p-2 border rounded-md">
         </div>
 
         <!-- End Date -->
         <div class="flex flex-col">
             <label for="end_date" class="text-sm font-medium text-gray-700">End Date</label>
-            <input type="date" id="endDate'" name="endDate'" 
-                   class="w-48 p-2 border rounded-md">
+            <input type="date" id="endDate" name="endDate" value="{{ old('endDate', request('endDate', now()->addDays(30)->format('Y-m-d'))) }}" 
+                    class="w-48 p-2 border rounded-md">
         </div>
 
         <!-- Status of Service -->
@@ -20,9 +20,12 @@
             <label for="status" class="text-sm font-medium text-gray-700">Status</label>
             <select id="status" name="status" class="w-48 p-2 border rounded-md">
                 <option value="">All</option>
-                <option value="pending">Pending</option>
-                <option value="completed">Completed</option>
-                <option value="canceled">Canceled</option>
+                <option value="Scheduled" {{ request('status') == 'Scheduled' ? 'selected' : '' }}>Scheduled</option>
+                <option value="In Progress" {{ request('status') == 'In Progress' ? 'selected' : '' }}>In Progress</option>
+                <option value="Completed" {{ request('status') == 'Completed' ? 'selected' : '' }}>Completed</option>
+                <option value="Pending Parts" {{ request('status') == 'Pending Parts' ? 'selected' : '' }}>Pending Parts</option>
+                <option value="On Hold" {{ request('status') == 'Completed' ? 'selected' : '' }}>On Hold</option>
+                <option value="Cancelled" {{ request('status') == 'Cancelled' ? 'Cancelled' : '' }}>Canceled</option>
             </select>
         </div>
 

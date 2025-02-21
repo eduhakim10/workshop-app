@@ -25,18 +25,19 @@ class Dashboard extends Page
     {
         // Set default date range (e.g., last 30 days)
         $this->startDate = request()->query('startDate', now()->subDays(30)->format('Y-m-d'));
-        $this->endDate = request()->query('endDate', now()->format('Y-m-d'));
+        $this->endDate = request()->query('endDate', now()->addDays(30)->format('Y-m-d'));
         $this->status = request()->query('status', null);
-        $this->categoryServiceId = request()->query('categoryServiceId', null); // Capture category_services_id
+        $this->categoryServiceId = request()->query('categoryServiceId', null); // Capture category_service_id
 
     
     }
 
     public function getStats()
     {
+        
         $query = Service::query();
         
-     //  dd($this->startDate);
+     //  dd($this->endDate);
         // Apply filters
         if ($this->startDate) {
             $query->whereDate('service_start_date', '>=', $this->startDate);
@@ -51,7 +52,7 @@ class Dashboard extends Page
         }
 
         if ($this->categoryServiceId) {
-            $query->where('category_services_id', $this->categoryServiceId);
+            $query->where('category_service_id', $this->categoryServiceId);
         }
 
         $revenue = $query->sum('amount_offer_revision');
@@ -135,7 +136,7 @@ class Dashboard extends Page
         }
 
         if ($this->categoryServiceId) {
-            $query->where('category_services_id', $this->categoryServiceId);
+            $query->where('category_service_id', $this->categoryServiceId);
         }
 
         // Bar Chart: Revenue by Location
@@ -197,7 +198,7 @@ class Dashboard extends Page
         }
 
         if ($this->categoryServiceId) {
-            $query->where('category_services_id', $this->categoryServiceId);
+            $query->where('category_service_id', $this->categoryServiceId);
         }
 
         return [
