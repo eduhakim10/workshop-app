@@ -23,7 +23,15 @@ class CategoryItemResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-tag';
     protected static ?string $navigationGroup = 'Inventory Management'; // Optional grouping
 
+    public static function canCreate(): bool
+    {
+        return auth()->user()->can('create category items');
+    }
 
+    public static function canViewAny(): bool
+    {
+        return auth()->user()->can('view category items');
+    }
     public static function form(Forms\Form $form): Forms\Form
     {
         return $form->schema([
@@ -69,4 +77,5 @@ class CategoryItemResource extends Resource
             'edit' => Pages\EditCategoryItem::route('/{record}/edit'),
         ];
     }
+
 }

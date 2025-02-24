@@ -98,4 +98,8 @@ class CustomerResource extends Resource
     {
         return 'Management';
     }
+    public static function canViewAny(): bool
+    {
+        return auth()->user()->can('view customers');
+    }
 }

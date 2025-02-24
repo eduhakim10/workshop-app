@@ -87,4 +87,16 @@ class CategoryServiceResource extends Resource
             'edit' => Pages\EditCategoryService::route('/{record}/edit'),
         ];
     }
+
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()->can('create category items');
+    }
+
+    public static function canViewAny(): bool
+    {
+        return auth()->user()->can('view category items');
+    }
+
 }

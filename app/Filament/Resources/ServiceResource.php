@@ -228,4 +228,8 @@ class ServiceResource extends Resource
             'edit' => Pages\EditService::route('/{record}/edit'),
         ];
     }
+    public static function canViewAny(): bool
+    {
+        return auth()->user()->can('view services');
+    }
 }
