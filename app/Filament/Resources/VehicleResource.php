@@ -160,7 +160,7 @@ class VehicleResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return auth()->user()->can('view vehicle');
+        return auth()->user()->can('view vehicles');
     }
 
 
