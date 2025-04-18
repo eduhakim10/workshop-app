@@ -3,7 +3,7 @@
 ## Overview
 
 This project implements a sales dashboard application using Next.js for the frontend and FastAPI for the backend API.  The application visualizes data from a provided `dummyData.json` file, showcasing sales representative information, deal statuses, and integrates a generative AI component for question answering.
-
+ 
 ## Features
 
 * **Frontend (Next.js):**  Displays sales representative data in cards, interactive charts (pie and bar charts) visualizing deal statuses, and a form for interacting with the generative AI.  Uses Tailwind CSS for styling.
