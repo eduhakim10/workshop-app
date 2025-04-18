@@ -93,6 +93,3 @@ This project implements a sales dashboard application using Next.js for the fron
 
 4. Open browser at [http://localhost:3000](http://localhost:3000)
 
----
-
-Kalau mau aku tambahin bagian lain atau revisi tinggal bilang ya bro! 🚀
