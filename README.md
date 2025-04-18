@@ -56,28 +56,41 @@ This project implements a sales dashboard application using Next.js for the fron
       uvicorn main:app --reload --host 0.0.0.0 --port 8000
        ```
 
-### Frontend (Next.js)
 
-1. Navigate to the frontend directory:  
-   cd frontend
+### Backend (FastAPI)
 
-2. Install dependencies using npm or yarn:
+1. **Clone the repository:**  
+   `git clone <repository_url>`
 
-   npm install  
+2. **Navigate to the backend directory:**  
+   `cd backend`
 
-    or  
+3. **Create a virtual environment:**  
+   - On macOS/Linux:  
+     ```bash
+     python3 -m venv venv
+     source venv/bin/activate
+     ```
+   - On Windows:  
+     ```powershell
+     python -m venv venv
+     .\venv\Scripts\activate
+     ```
 
-   yarn install
+4. **Install dependencies:**  
+   `pip install -r requirements.txt`
 
-3. Run the development server:
+5. **Set environment variables:**  
+   - Rename `.env_example` to `.env` in the backend directory.
+   - Add your Google Generative AI credentials:  
 
-   npm run dev  
-
-    or  
-
-   yarn dev
-
-
+    ```env
+    OPENAI_API_KEY=your_path_generative_ai_api_json_here
+    ```
+5.  **Run the backend:**:
+  ```bash
+      uvicorn main:app --reload --host 0.0.0.0 --port 8000
+       ```
 ### Notes
 - Make sure you have Node.js and Python installed on your machine.
 - The Google Generative AI API key is required for AI features in this project.
