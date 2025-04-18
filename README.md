@@ -3,7 +3,7 @@
 ## Overview
 
 This project implements a sales dashboard application using Next.js for the frontend and FastAPI for the backend API.  The application visualizes data from a provided `dummyData.json` file, showcasing sales representative information, deal statuses, and integrates a generative AI component for question answering.
- 
+
 ## Features
 
 * **Frontend (Next.js):**  Displays sales representative data in cards, interactive charts (pie and bar charts) visualizing deal statuses, and a form for interacting with the generative AI.  Uses Tailwind CSS for styling.
@@ -54,41 +54,29 @@ This project implements a sales dashboard application using Next.js for the fron
 5.  **Run the backend:**:
   ```bash
       uvicorn main:app --reload --host 0.0.0.0 --port 8000
-         ```
-
----
+      
 
 ### Frontend (Next.js)
 
-1. **Navigate to the frontend directory:**  
-    `cd frontend`
+1. Navigate to the frontend directory:  
+   cd frontend
 
-2. **Install dependencies using npm or yarn:**  
+2. Install dependencies using npm or yarn:
 
-    Using npm:  
-    ```bash
-    npm install
-    ```
-    
-    Or using yarn:   
-    ```bash 
-    yarn install 
-    ```
+   npm install  
 
-3. **Run the development server:**  
+    or  
 
-    Using npm:   
-    ```bash 
-    npm run dev 
-    ```
-    
-    Or using yarn:
-    
-    ```bash 
-    yarn dev 
-    ```
+   yarn install
 
----
+3. Run the development server:
+
+   npm run dev  
+
+    or  
+
+   yarn dev
+
 
 ### Notes
 - Make sure you have Node.js and Python installed on your machine.
