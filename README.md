@@ -54,7 +54,7 @@ This project implements a sales dashboard application using Next.js for the fron
 5.  **Run the backend:**:
   ```bash
       uvicorn main:app --reload --host 0.0.0.0 --port 8000
-      
+       ```
 
 ### Frontend (Next.js)
 
