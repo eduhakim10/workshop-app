@@ -60,7 +60,7 @@ This project implements a sales dashboard application using Next.js for the fron
    Rename `.env_example` to `.env` in backend directory then add your OpenAI or Google Generative AI key:
 
    ```
-   OPENAI_API_KEY=your_openai_api_key_here
+   OPENAI_API_KEY=your_generativeai_api_json_key_here
    ```
 
 6. Run backend server:
