@@ -55,36 +55,76 @@ This project implements a sales dashboard application using Next.js for the fron
   ```bash
       uvicorn main:app --reload --host 0.0.0.0 --port 8000
          ```
-Bro, aku rapihin bagian **Frontend (Next.js)** supaya tampilannya rapi dan enak dibaca di GitHub README. Berikut versi yang sudah diperbaiki dengan spacing dan indentasi pas:
+
+## Setup and Installation
+
+### Backend (FastAPI)
+
+1. **Clone the repository:**  
+   `git clone <repository_url>`
+
+2. **Navigate to the backend directory:**  
+   `cd backend`
+
+3. **Create a virtual environment:**  
+   - On macOS/Linux:  
+     ```bash
+     python3 -m venv venv
+     source venv/bin/activate
+     ```
+   - On Windows:  
+     ```powershell
+     python -m venv venv
+     .\venv\Scripts\activate
+     ```
+
+4. **Install dependencies:**  
+   `pip install -r requirements.txt`
+
+5. **Set environment variables:**  
+   Rename `.env_example` to `.env` in the backend directory and add your OpenAI API key:  
+   ```env
+   OPENAI_API_KEY=your_openai_api_key_here
+   ```
+
+6. **Run the backend server:**  
+   ```bash
+   uvicorn main:app --reload --host 0.0.0.0 --port 8000
+   ```
 
 ---
 
 ### Frontend (Next.js)
 
-1. Navigate to the frontend directory:  
-   `cd frontend`
+1. **Navigate to the frontend directory:**  
+    `cd frontend`
 
-2. Install dependencies using npm or yarn:  
-   ```bash
-   npm install
-   ```  
-   or  
-   ```bash
-   yarn install
-   ```
+2. **Install dependencies using npm or yarn:**  
 
-3. Run the development server:  
-   ```bash
-   npm run dev
-   ```  
-   or  
-   ```bash
-   yarn dev
-   ```
+    Using npm:  
+    ```bash
+    npm install
+    ```
+    
+    Or using yarn:   
+    ```bash 
+    yarn install 
+    ```
+
+3. **Run the development server:**  
+
+    Using npm:   
+    ```bash 
+    npm run dev 
+    ```
+    
+    Or using yarn:
+    
+    ```bash 
+    yarn dev 
+    ```
 
 ---
-
-Kalau kamu copas ini ke README.md atau readme.txt di GitHub, tampilannya bakal bersih dan mudah dibaca! 🚀
 
 ### Notes
 - Make sure you have Node.js and Python installed on your machine.
