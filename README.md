@@ -1,6 +1,3 @@
-Bro, ini aku rapihin dan lengkapi format README kamu supaya tampilannya rapi dan profesional di GitHub. Aku buat versi draft lengkap berdasarkan potongan yang kamu kasih, tinggal kamu copas aja:
-
----
 
 # Coding Challenge: Sales Dashboard with Next.js & FastAPI
 
