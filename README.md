@@ -56,44 +56,6 @@ This project implements a sales dashboard application using Next.js for the fron
       uvicorn main:app --reload --host 0.0.0.0 --port 8000
          ```
 
-## Setup and Installation
-
-### Backend (FastAPI)
-
-1. **Clone the repository:**  
-   `git clone <repository_url>`
-
-2. **Navigate to the backend directory:**  
-   `cd backend`
-
-3. **Create a virtual environment:**  
-   - On macOS/Linux:  
-     ```bash
-     python3 -m venv venv
-     source venv/bin/activate
-     ```
-   - On Windows:  
-     ```powershell
-     python -m venv venv
-     .\venv\Scripts\activate
-     ```
-
-4. **Install dependencies:**  
-   `pip install -r requirements.txt`
-
-5. **Set environment variables:**  
-   Rename `.env_example` to `.env` in the backend directory and add your OpenAI API key:  
-   ```env
-   OPENAI_API_KEY=your_openai_api_key_here
-   ```
-
-6. **Run the backend server:**  
-   ```bash
-   uvicorn main:app --reload --host 0.0.0.0 --port 8000
-   ```
-
----
-
 ### Frontend (Next.js)
 
 1. **Navigate to the frontend directory:**  
