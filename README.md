@@ -26,7 +26,8 @@ This project implements a sales dashboard application using Next.js for the fron
 
 * **Frontend:** Next.js, React, Recharts, Chart.js, Tailwind CSS  
 * **Backend:** FastAPI, Uvicorn (server)  
-* **Generative AI:** Google Generative AI API 
+* **Generative AI:**   Google Generative AI API — [Official Documentation](https://cloud.google.com/docs/generative-ai)
+
 
 ## Setup and Installation
 
