@@ -55,28 +55,36 @@ This project implements a sales dashboard application using Next.js for the fron
   ```bash
       uvicorn main:app --reload --host 0.0.0.0 --port 8000
          ```
+Bro, aku rapihin bagian **Frontend (Next.js)** supaya tampilannya rapi dan enak dibaca di GitHub README. Berikut versi yang sudah diperbaiki dengan spacing dan indentasi pas:
+
+---
 
 ### Frontend (Next.js)
 
 1. Navigate to the frontend directory:  
-   cd frontend
+   `cd frontend`
 
-2. Install dependencies using npm or yarn:
-
-   npm install  
-
-    or  
-
+2. Install dependencies using npm or yarn:  
+   ```bash
+   npm install
+   ```  
+   or  
+   ```bash
    yarn install
+   ```
 
-3. Run the development server:
-
-   npm run dev  
-
-    or  
-
+3. Run the development server:  
+   ```bash
+   npm run dev
+   ```  
+   or  
+   ```bash
    yarn dev
+   ```
 
+---
+
+Kalau kamu copas ini ke README.md atau readme.txt di GitHub, tampilannya bakal bersih dan mudah dibaca! 🚀
 
 ### Notes
 - Make sure you have Node.js and Python installed on your machine.
