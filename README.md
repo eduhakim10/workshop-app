@@ -49,11 +49,12 @@ This project implements a sales dashboard application using Next.js for the fron
    - Add your Google Generative AI credentials:  
 
     ```env
-    OPENAI_API_KEY=your_openai_api_key_here
+    OPENAI_API_KEY=your_path_generative_ai_api_json_here
     ```
 5.  **Run the backend:**:
   ```bash
       uvicorn main:app --reload --host 0.0.0.0 --port 8000
+         ```
 
 ### Frontend (Next.js)
 
