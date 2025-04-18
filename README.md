@@ -1,5 +1,4 @@
 
-
 # Coding Challenge: Sales Dashboard with Next.js & FastAPI
 
 ## Overview
@@ -29,19 +28,21 @@ This project implements a sales dashboard application using Next.js for the fron
 * **Backend:** FastAPI, Uvicorn (server)  
 * **Generative AI:**   Google Generative AI API — [Official Documentation](https://cloud.google.com/docs/generative-ai)
 
+
 ## Project Structure
 
+```
 coding-test/
 ├── frontend/
-│   ├── components/ # Reusable React components (SalesRepCard, LoadingSpinner, etc.)
-│   ├── pages/ #Next.js page components
-│   ├── styles/ #Tailwind stylesheets
-│   └── api/ #Utility functions and API calls
-├── backend/
-├── main.py / #Backend API endpoints (currently under development)
-└── requirement.txt  /# Python library dependencies
-├── .env_example / # Example environment variables file for Google Generative AI credentials path
-
+│   ├── components/      # Reusable React components (SalesRepCard, LoadingSpinner, etc.)
+│   ├── pages/           # Next.js page components
+│   ├── styles/          # Tailwind CSS stylesheets
+│   └── api/             # Utility functions and API calls
+├── backend/             # Backend source code (currently empty or under development)
+├── main.py              # Backend API endpoints (currently under development)
+├── requirements.txt     # Python library dependencies
+└── .env_example         # Example environment variables file for Google Generative AI credentials path
+```
 
 ## Setup and Installation
 
