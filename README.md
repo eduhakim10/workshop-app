@@ -57,40 +57,7 @@ This project implements a sales dashboard application using Next.js for the fron
        ```
 
 
-### Backend (FastAPI)
 
-1. **Clone the repository:**  
-   `git clone <repository_url>`
-
-2. **Navigate to the backend directory:**  
-   `cd backend`
-
-3. **Create a virtual environment:**  
-   - On macOS/Linux:  
-     ```bash
-     python3 -m venv venv
-     source venv/bin/activate
-     ```
-   - On Windows:  
-     ```powershell
-     python -m venv venv
-     .\venv\Scripts\activate
-     ```
-
-4. **Install dependencies:**  
-   `pip install -r requirements.txt`
-
-5. **Set environment variables:**  
-   - Rename `.env_example` to `.env` in the backend directory.
-   - Add your Google Generative AI credentials:  
-
-    ```env
-    OPENAI_API_KEY=your_path_generative_ai_api_json_here
-    ```
-5.  **Run the backend:**:
-  ```bash
-      uvicorn main:app --reload --host 0.0.0.0 --port 8000
-       ```
 ### Notes
 - Make sure you have Node.js and Python installed on your machine.
 - The Google Generative AI API key is required for AI features in this project.
