@@ -36,7 +36,9 @@ This project implements a sales dashboard application using Next.js for the fron
    `git clone <repository_url>`
 
 2. Navigate to backend directory:  
-   `cd backend`
+ ```bash
+    cd backend
+    ```
 
 3. Create virtual environment:  
 
