@@ -26,7 +26,7 @@ This project implements a sales dashboard application using Next.js for the fron
 
 * **Frontend:** Next.js, React, Recharts, Chart.js, Tailwind CSS  
 * **Backend:** FastAPI, Uvicorn (server)  
-* **Generative AI:** OpenAI API or similar  
+* **Generative AI:** Google Generative AI API 
 
 ## Setup and Installation
 
@@ -57,7 +57,7 @@ This project implements a sales dashboard application using Next.js for the fron
 
 5. Set environment variables:
 
-   Rename `.env_example` to `.env` in backend directory then add your OpenAI or Google Generative AI key:
+   Rename `.env_example` to `.env` in backend directory then add your  Google Generative AI json key:
 
    ```
    OPENAI_API_KEY=your_generativeai_api_json_key_here
