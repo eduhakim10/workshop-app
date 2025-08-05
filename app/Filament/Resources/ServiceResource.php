@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Forms\Components\Repeater;
 use App\Models\CategoryService;
+use Filament\Forms\Components\Placeholder;
 
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Password;
@@ -69,6 +70,8 @@ class ServiceResource extends Resource
                 ->required()
                 ->searchable(),
             TextInput::make('offer_number')->required(),
+            TextInput::make('spk_number')->required(),
+            TextInput::make('po_number')->required(),
             TextInput::make('amount_offer')->numeric()->required(),
             TextInput::make('amount_offer_revision')->numeric(),
             DatePicker::make('handover_offer_date'),
@@ -152,7 +155,29 @@ class ServiceResource extends Resource
             ->defaultItems(1)
             ->columnSpan('full')
             ->required(),
+
+    Placeholder::make('total_items_price')
+        ->label('Total Price')
+        ->content(function (callable $get) {
+            $items = $get('items') ?? [];
+            $total = 0;
+
+            foreach ($items as $item) {
+                $price = isset($item['sales_price']) ? floatval($item['sales_price']) : 0;
+                $qty = isset($item['quantity']) ? floatval($item['quantity']) : 0;
+                $total += $price * $qty;
+            }
+
+            return 'Rp ' . number_format($total, 0, ',', '.');
+        })
+        ->columnSpanFull(),
         ]);
+
+        
+
+
+
+        
     }
 
     public static function table(Table $table): Table
@@ -206,7 +231,11 @@ class ServiceResource extends Resource
                 Tables\Actions\EditAction::make(),
             ]);
     }
-    
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->where('stage', 2);
+    }
 
     public static function getRelations(): array
     {

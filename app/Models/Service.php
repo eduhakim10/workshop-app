@@ -26,13 +26,22 @@ class Service extends Model
         'service_due_date',
         'service_start_time',
         'service_due_time',
-
         'status',
         'notes',
         'items', 
+         'items_offer', 
+         'stage',
+        'payment_terms',
+        'validity_terms',
+        'devlivery_terms',
+        'prepared_by',
+        'quotation_status',
+         'spk_number',
+         'po_number'
     ];
     protected $casts = [
         'items' => 'array',
+        'items_offer' => 'array',
         'customer_id' => 'integer',
 
     ];

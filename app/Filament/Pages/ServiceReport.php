@@ -38,7 +38,13 @@ class ServiceReport extends Page
     protected function getFormSchema(): array
     {
         return [
-
+            Forms\Components\Select::make('seino_no')
+                ->label('Seino / Non Seino')
+                ->options([
+                    'Seino' => 'Seino',
+                    'Non Seino' => 'Non Seino',
+                ])
+                ->placeholder('All'),
             Forms\Components\Select::make('location_id')
             ->label('Location')
             ->options(\App\Models\Location::pluck('name', 'id'))

@@ -23,6 +23,7 @@ class Dashboard extends Page
 
     public function mount()
     {
+        // dd($_SERVER);
         // Set default date range (e.g., last 30 days)
         $this->startDate = request()->query('startDate', now()->subDays(30)->format('Y-m-d'));
         $this->endDate = request()->query('endDate', now()->addDays(30)->format('Y-m-d'));
