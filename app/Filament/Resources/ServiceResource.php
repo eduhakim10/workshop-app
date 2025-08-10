@@ -69,7 +69,27 @@ class ServiceResource extends Resource
                 ->options(CategoryService::pluck('name', 'id')->toArray())
                 ->required()
                 ->searchable(),
-            TextInput::make('offer_number')->required(),
+           TextInput::make('offer_number')
+            ->label('Offer Number')
+            ->required()
+            ->rule(function (callable $get) {
+                return function (string $attribute, $value, Closure $fail) use ($get) {
+                    $vehicleId = $get('vehicle_id');
+
+                    if (!$vehicleId) {
+                        return; // skip validation kalau vehicle belum dipilih
+                    }
+
+                    $exists = \App\Models\Service::where('offer_number', $value)
+                        ->where('vehicle_id', $vehicleId)
+                        ->exists();
+
+                    if ($exists) {
+                        $fail("Kombinasi Offer Number dan Plat Nomor sudah digunakan.");
+                    }
+                };
+            }),
+
             TextInput::make('spk_number')->required(),
             TextInput::make('po_number')->required(),
             TextInput::make('amount_offer')->numeric()->required(),

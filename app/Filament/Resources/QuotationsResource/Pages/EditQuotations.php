@@ -20,10 +20,15 @@ class EditQuotations extends EditRecord
                 ->icon('heroicon-o-check-circle')
                 ->requiresConfirmation()
                 ->action(function () {
-                    $this->record->stage = 2;
+                    $quotation = $this->record;
+                    $quotation->stage = 2;
+                    // $this->record->stage = 2;
+
+                     $quotation->items = $quotation->items_offer;
                     $this->record->save();
 
-                    $this->notify('success', 'Quotation approved as service.');
+                 //   $this->notify('success', 'Quotation approved as service.');
+                    $this->notify('success', 'Quotation approved to service.');
                     $this->redirect(ServiceResource::getUrl());
                 })
                 ->visible(fn () => $this->record->stage == 1), // Optional: hanya tampil jika belum di-approve

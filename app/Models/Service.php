@@ -77,5 +77,9 @@ class Service extends Model
     {
         return $this->belongsTo(Employee::class, 'assign_to', 'id');
     }
+    public function photos()
+    {
+        return $this->hasMany(ServicePhoto::class);
+    }
 
 }
