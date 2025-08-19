@@ -16,6 +16,8 @@ use Filament\Forms\Components\TextInput;
 use Filament\Tables\Columns\TextColumn;
 use Spatie\Permission\Models\Role;
 use Illuminate\Database\Eloquent\Model;
+use Filament\Forms\Components\FileUpload;
+
 
 
 class EmployeeResource extends Resource
@@ -36,6 +38,9 @@ class EmployeeResource extends Resource
                     TextInput::make('name')
                         ->required()
                         ->maxLength(255),
+                    TextInput::make('position')
+                        ->required()
+                        ->maxLength(255),
                     TextInput::make('phone')
                         ->tel()
                         ->required()
@@ -47,6 +52,14 @@ class EmployeeResource extends Resource
                         ->unique(Employee::class, 'email', fn ($record) => $record), // Add unique rule for email
                     TextInput::make('address')
                         ->maxLength(500),
+                    FileUpload::make('signature')
+                        ->label('Tanda Tangan')
+                        ->image()
+                        ->directory('signatures')
+                        ->imagePreviewHeight('150')
+                        ->downloadable()
+                        ->openable()
+                        ->nullable(),
                 ]);
     }
 

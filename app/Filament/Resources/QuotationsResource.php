@@ -12,6 +12,7 @@ use App\Helpers\OfferHelper;
 use Filament\Forms;
 use Filament\Forms\Form;
 use App\Models\Vehicle;
+use App\Models\ServiceGroup;
 use Filament\Resources\Resource;
 use App\Models\CategoryItem;
 use App\Models\Item;
@@ -101,6 +102,10 @@ class QuotationsResource extends Resource
                 ->label('Payment Terms')
                 ->default("50% Down Payment, 50% after completion")
                 ->columnSpanFull(),
+            TextInput::make('delivery_terms')
+                ->label('Delivery Terms')
+                ->default("Base on Schedule MTI")
+                ->columnSpanFull(),
             TextInput::make('validity_terms')
                 ->label('Validity Terms')
                 ->default("One month after this quotation, this price can be change anythime without price notice")
@@ -127,24 +132,45 @@ class QuotationsResource extends Resource
             Textarea::make('notes'),
 
           
+    Repeater::make('items_offer')
+    ->label('Service Groups')
+    ->schema([
 
-            // Items Table
-            Repeater::make('items_offer')
+        // Service Group Header
+        Select::make('service_group_id')
+            ->label('Service Group')
+            ->options(ServiceGroup::pluck('name', 'id'))
+            ->required(),
+
+        TextInput::make('qty')
+            ->label('Group Qty')
+            ->numeric()
+            ->default(1)
+            ->required(),
+
+        TextInput::make('price')
+            ->label('Group Price')
+            ->numeric()
+            ->prefix('Rp')
+            ->required(),
+
+        // Nested Repeater untuk Items
+        Repeater::make('items')
             ->label('Items')
             ->schema([
                 Select::make('category_item_id')
-                ->label('Item Category')
-                ->options(CategoryItem::pluck('name', 'id'))
-                ->reactive()
-                ->searchable()
-                ->required(),
+                    ->label('Item Category')
+                    ->options(CategoryItem::pluck('name', 'id'))
+                    ->reactive()
+                    ->searchable()
+                    ->required(),
                 
-                Forms\Components\Select::make('item_id')
+                Select::make('item_id')
                     ->label('Item')
                     ->options(fn (callable $get) => 
-                    $get('category_item_id') 
-                        ? Item::where('category_item_id', $get('category_item_id'))->pluck('name', 'id') 
-                        : []
+                        $get('category_item_id') 
+                            ? Item::where('category_item_id', $get('category_item_id'))->pluck('name', 'id') 
+                            : []
                     )
                     ->reactive()
                     ->afterStateUpdated(function ($state, callable $set) {
@@ -157,19 +183,18 @@ class QuotationsResource extends Resource
                     ->columnSpan(1)
                     ->required(),
 
-                Forms\Components\TextInput::make('sales_price')
+                TextInput::make('sales_price')
                     ->label('Sales Price')
                     ->numeric()
                     ->required()
                     ->prefix('Rp'),
                 
-                Forms\Components\TextInput::make('quantity')
+                TextInput::make('quantity')
                     ->label('Quantity')
                     ->numeric()
                     ->default(1)
                     ->required()
                     ->columnSpan(1)
-                      ->live()
                     ->suffix(fn (callable $get) => 
                         optional(Item::find($get('item_id')))->unit ?? 'pcs'
                     ),
@@ -178,26 +203,31 @@ class QuotationsResource extends Resource
             ->collapsible()
             ->defaultItems(1)
             ->columnSpan('full')
-            
             ->required(),
+    ])
+    ->columns(3)
+    ->collapsible()
+    ->defaultItems(1)
+    ->columnSpan('full'),
 
-Placeholder::make('total_items_price')
-    ->label('Total Price')
-    ->content(function (callable $get) {
-        $items = $get('items_offer') ?? [];
-        $total = 0;
 
-        foreach ($items as $item) {
-            $price = isset($item['sales_price']) ? floatval($item['sales_price']) : 0;
-            $qty = isset($item['quantity']) ? floatval($item['quantity']) : 0;
-            $total += $price * $qty;
-        }
+    Placeholder::make('total_items_price')
+        ->label('Total Price')
+        ->content(function (callable $get) {
+            $items = $get('items_offer') ?? [];
+            $total = 0;
 
-        return 'Rp ' . number_format($total, 0, ',', '.');
-    })
-    ->reactive() // Penting
-    ->columnSpanFull(),
-        ]);
+            foreach ($items as $item) {
+                $price = isset($item['sales_price']) ? floatval($item['sales_price']) : 0;
+                $qty = isset($item['quantity']) ? floatval($item['quantity']) : 0;
+                $total += $price * $qty;
+            }
+
+            return 'Rp ' . number_format($total, 0, ',', '.');
+        })
+        ->reactive() // Penting
+        ->columnSpanFull(),
+            ]);
 
         
 

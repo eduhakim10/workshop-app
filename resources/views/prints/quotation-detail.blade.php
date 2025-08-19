@@ -39,9 +39,31 @@
       margin-top: 40px;
       text-align: right;
     }
+      @media print {
+   .btn, .no-print {
+      display: none !important;
+   }
+     @page {
+    margin: 20mm; /* atur margin */
+  }
+  
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Sembunyiin header/footer bawaan browser */
+  @page {
+    size: auto;
+    margin: 0;
+  }
+}
   </style>
 </head>
 <body>
+    <button onclick="window.print()" class="btn btn-primary">
+   Cetak
+</button>
   <div class="container">
 <div style="display: flex; align-items: flex-start;">
   <img src="/images/logo.jpeg" alt="logo" style="height: 50px; margin-right: 15px;" />
@@ -72,64 +94,161 @@
 
     <p>We are pleased to offer you the following price:</p>
 
-    <table>
-      <thead>
+    <table border="1" cellpadding="6" cellspacing="0" width="100%" style="border-collapse: collapse; font-family: Arial, sans-serif; font-size: 12px;">
+  <thead>
+    <tr>
+      <th style="width:5%; text-align:center;">NO</th>
+      <th style="width:40%; text-align:center;">ITEM</th>
+      <th style="width:10%; text-align:center;">QTY ORDER<br>(UNIT)</th>
+      <th style="width:15%; text-align:center;">PRICE / UNIT</th>
+      <th style="width:15%; text-align:center;">AMOUNT</th>
+      <th style="width:15%; text-align:center;">REMARKS</th>
+    </tr>
+  </thead>
+  <tbody>
+    @php 
+        $no = 1;
+        $subtotal = 0;
+    @endphp
+
+    @foreach($service->items_offer as $group)
+        @php 
+            $serviceGroup = \App\Models\ServiceGroup::find($group['service_group_id']);
+            $groupName = $serviceGroup?->name ?? '-';
+            $groupQty = $group['qty'];
+            $remarks = $service->notes;
+        @endphp
         <tr>
-          <th>No</th>
-          <th>Item</th>
-          <th>Qty</th>
-          <th>Unit</th>
-          <th>Price</th>
-          <th>Amount</th>
-          <th>Remarks</th>
+            <td style="text-align:center;">{{ $no++ }}</td>
+            <td style="text-align: left;">
+                <strong>{{ $groupName }}</strong><br><br>
+                <!-- <strong>REPAIR :</strong><br> -->
+                @foreach($group['items'] as $item)
+               
+                    @php
+                  
+                        $item = \App\Models\Item::find($item['item_id']);
+                    @endphp
+                      {{ $item?->name ?? '-' }} <br>
+                @endforeach
+            </td>
+            <td style="text-align:center; vertical-align:top;">
+              <br>
+              <br>
+                <br>
+            @foreach($group['items'] as $item)
+            {{ $item['quantity'] ?? '-' }} <br>
+        @endforeach
+
+            </td>
+            <td style="vertical-align:top;">
+                <br><br><br>
+                @foreach($group['items'] as $item)
+                <div style="display:flex; justify-content:space-between;">
+                  <span style="text-align:left;">Rp</span>
+                  <span style="text-align:right;">{{ number_format($item['sales_price'], 0, ',', '.') }}</span>
+                </div>
+             
+                @endforeach
+            </td>
+         
+            <td style="vertical-align:top;">
+                <br><br><br>
+                @foreach($group['items'] as $item)
+                    @php 
+                        $amount = $item['sales_price'] * $item['quantity'];
+                        $subtotal += $amount;
+                    @endphp
+                        <div style="display:flex; justify-content:space-between;">
+                          <span style="text-align:left;">Rp</span>
+                          <span style="text-align:right;">{{ number_format($amount, 0, ',', '.') }}</span>
+                        </div>
+                  
+                @endforeach
+            </td>
+            <td>{{ $remarks }}</td>
         </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>1</td>
-          <td>Repair Wing Box</td>
-          <td>1</td>
-          <td>Set</td>
-          <td>Rp 10,000,000</td>
-          <td>Rp 10,000,000</td>
-          <td>GODOMLANGAN</td>
-        </tr>
-        <!-- Tambahkan baris item lainnya -->
-        <tr>
-          <td colspan="5" class="text-left bold">Total</td>
-          <td colspan="2" class="bold">Rp 10,000,000</td>
-        </tr>
-      </tbody>
-    </table>
+    @endforeach
+
+    <!-- Footer subtotal -->
+    <tr>
+      <td colspan="4" style="text-align:right;"><strong>Sub Total</strong></td>
+      <td>
+       
+              <div style="display:flex; justify-content:space-between;">
+                <span style="text-align:left;">Rp</span>
+                <span style="text-align:right;">{{ number_format($subtotal, 0, ',', '.') }}</span>
+              </div>
+      
+      </td>
+      <td></td>
+    </tr>
+    <tr>
+      <td colspan="4" style="text-align:right;"><strong>PPN 11%</strong></td>
+      <td>
+            <div style="display:flex; justify-content:space-between;">
+                <span style="text-align:left;">Rp</span>
+                <span style="text-align:right;">{{ number_format($subtotal * 0.11, 0, ',', '.') }}</span>
+              </div>
+
+      </td>
+      <td></td>
+    </tr>
+    <tr>
+      <td colspan="4" style="text-align:right;"><strong>Total</strong></td>
+      <td>
+              <div style="display:flex; justify-content:space-between;">
+                <span style="text-align:left;">Rp</span>
+                <span style="text-align:right;"><strong> {{ number_format($subtotal * 1.11, 0, ',', '.') }}</strong></span>
+              </div>
+      </td>
+      <td></td>
+    </tr>
+  </tbody>
+</table>
+   
 
    <!-- Terms & Conditions -->
 <p><strong>Terms & Conditions:</strong></p>
 <div style="margin-top: 5px; line-height: 1.8;">
   <div style="display: flex;">
     <div style="width: 100px;"><strong>Payment</strong></div>
-    <div>: 50% Down Payment, 50% after completion</div>
+    <div>: {{ $service->payment_terms }}</div>
   </div>
   <div style="display: flex;">
     <div style="width: 100px;"><strong>Delivery</strong></div>
-    <div>: 14 Days after PO</div>
+    <div>: {{$service->delivery_terms }}</div>
   </div>
   <div style="display: flex;">
     <div style="width: 100px;"><strong>Validity</strong></div>
-    <div>: 30 days</div>
+    <div>: {{ $service->validity_terms }}</div>
   </div>
-  <div style="display: flex;">
+  <!-- <div style="display: flex;">
     <div style="width: 100px;"><strong>Note</strong></div>
     <div>: Harga di atas belum termasuk PPN 11%</div>
-  </div>
+  </div> -->
 </div>
 
 
-    <div class="signature">
-      <p>Karawang, 01/06/2025</p>
-      <p><strong>P. T. MITRA TOYOTAKA INDONESIA</strong></p>
-      <br /><br />
-      <p><u>D. LUTFI</u><br />MARKETING</p>
-    </div>
+<p>Balaraja, {{ \Carbon\Carbon::parse($service->created_at_offer)->translatedFormat('d F Y') }}</p>
+
+<div style="display:flex; justify-content:space-between; margin-top:10px; text-align:center;">
+  <div>
+    Approved by
+    <br><br><br><br>
+    <u>G. HATIBIE</u>
   </div>
+
+  <div>
+    <strong>P. T. MITRA TOYOTAKA INDONESIA</strong>
+    <br><br>
+    @if($service->preparedBy?->signature)
+    <img src="{{ Storage::url($service->preparedBy?->signature) }}" alt="Tanda Tangan" style="height:80px;">
+@endif
+    <br><br>
+    <u>{{ $service->preparedBy?->name }}</u><br>
+  {{ $service->preparedBy?->position }}
+  </div>
+</div>
 </body>
 </html>

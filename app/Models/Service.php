@@ -29,15 +29,17 @@ class Service extends Model
         'status',
         'notes',
         'items', 
-         'items_offer', 
-         'stage',
+        'items_offer', 
+        'stage',
         'payment_terms',
         'validity_terms',
-        'devlivery_terms',
+        'delivery_terms',
         'prepared_by',
         'quotation_status',
          'spk_number',
-         'po_number'
+         'po_number',
+         'created_at_offer',
+         'updated_at_offer'
     ];
     protected $casts = [
         'items' => 'array',
@@ -59,6 +61,10 @@ class Service extends Model
     public function employee()
     {
         return $this->belongsTo(Employee::class, 'assign_to');
+    }
+   public function preparedBy()
+    {
+        return $this->belongsTo(Employee::class, 'prepared_by');
     }
 
     public function items()

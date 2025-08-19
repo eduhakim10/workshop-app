@@ -72,6 +72,7 @@ class ServiceResource extends Resource
            TextInput::make('offer_number')
             ->label('Offer Number')
             ->required()
+            ->disabled()
             ->rule(function (callable $get) {
                 return function (string $attribute, $value, Closure $fail) use ($get) {
                     $vehicleId = $get('vehicle_id');
@@ -204,6 +205,8 @@ class ServiceResource extends Resource
     {
         return $table
             ->columns([
+                TextColumn::make('offer_number')->label('Offer Number')->searchable(),
+                TextColumn::make('spk_number')->label('SPK Number')->searchable(),
                 TextColumn::make('customer.name')->label('Customer')->searchable(),
                 TextColumn::make('vehicle.license_plate')->label('License Plate')->searchable(),
                 TextColumn::make('location.name')->label('Location'), // New column for Location
@@ -243,6 +246,30 @@ class ServiceResource extends Resource
                             ->label('License Plate')
                             ->placeholder('Enter License Plate'),
                     ]),
+                 Filter::make('offer_number')
+                    ->label('Offer Number')
+                    ->query(function (Builder $query, $data) {
+                        if (!empty($data['offer_number'])) {
+                            $query->where('offer_number', 'like', '%' . $data['offer_number'] . '%');
+                        }
+                    })
+                    ->form([
+                        TextInput::make('offer_number')
+                            ->label('Offer Number')
+                            ->placeholder('Enter Offer Number'),
+                ]),
+                  Filter::make('spk_number')
+                    ->label('SPK Number')
+                    ->query(function (Builder $query, $data) {
+                        if (!empty($data['spk_number'])) {
+                            $query->where('spk_number', 'like', '%' . $data['spk_number'] . '%');
+                        }
+                    })
+                    ->form([
+                        TextInput::make('offer_number')
+                            ->label('Offer Number')
+                            ->placeholder('Enter Offer Number'),
+                ]),
                 SelectFilter::make('customer_id')
                     ->label('Customer')
                     ->options(Customer::pluck('name', 'id')->toArray()),
@@ -254,7 +281,8 @@ class ServiceResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->where('stage', 2);
+            ->where('stage', 2)
+             ->orderBy('created_at', 'desc');
     }
 
     public static function getRelations(): array

@@ -3,9 +3,12 @@
 namespace App\Filament\Resources\QuotationsResource\Pages;
 
 use App\Filament\Resources\QuotationsResource;
+use App\Filament\Resources\ServiceResource;
+
 use Filament\Pages\Actions\Action;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
+use Filament\Notifications\Notification;
 
 class EditQuotations extends EditRecord
 {
@@ -16,19 +19,22 @@ class EditQuotations extends EditRecord
         return [
             Actions\DeleteAction::make(),
                         Action::make('Approve to Service')
-                ->label('Approve to Service')
+                ->label('Move to Service')
                 ->icon('heroicon-o-check-circle')
                 ->requiresConfirmation()
                 ->action(function () {
                     $quotation = $this->record;
                     $quotation->stage = 2;
-                    // $this->record->stage = 2;
-
+                    $quotation->updated_at_offer = now();
+                    $quotation->updated_at = now();
                      $quotation->items = $quotation->items_offer;
                     $this->record->save();
 
                  //   $this->notify('success', 'Quotation approved as service.');
-                    $this->notify('success', 'Quotation approved to service.');
+                 Notification::make()
+                    ->title('Quotation updated successfully')
+                    ->success()
+                    ->send();
                     $this->redirect(ServiceResource::getUrl());
                 })
                 ->visible(fn () => $this->record->stage == 1), // Optional: hanya tampil jika belum di-approve
@@ -47,6 +53,16 @@ class EditQuotations extends EditRecord
                 ->openUrlInNewTab(),
         ];
     }
+
+    protected function mutateFormDataBeforeSave(array $data): array
+        {
+            // kalau action nya edit, set updated_at_offer
+            if ($this->record) {
+                $data['updated_at_offer'] = now();
+            }
+
+            return $data;
+        }
         protected function getActions(): array
     {
         return [

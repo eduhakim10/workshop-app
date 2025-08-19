@@ -13,6 +13,7 @@ class CreateQuotations extends CreateRecord
     protected function mutateFormDataBeforeCreate(array $data): array
         {
             $data['stage'] = 1; // agar quotation masuk sebagai stage 1
+            $data['created_at_offer'] = now();
             return $data;
         }
     protected function getRedirectUrl(): string
