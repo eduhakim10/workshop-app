@@ -62,7 +62,7 @@
         </x-filament::card>
 
         <x-filament::card>
-            <h3 class="text-lg font-semibold">Total New Customers</h3>
+            <h3 class="text-lg font-semibold">Total Customers</h3>
             <p class="text-2xl font-bold">{{ $this->getStats()['newCustomers'] }}</p>
         </x-filament::card>
 

@@ -57,7 +57,19 @@ class Dashboard extends Page
         }
 
         $revenue = $query->sum('amount_offer_revision');
-        $newCustomers = Customer::whereBetween('created_at', [$this->startDate, $this->endDate])->count();
+      //  $newCustomers = Customer::whereBetween('created_at', [$this->startDate, $this->endDate])->count();
+      $newCustomers = Customer::whereHas('services', function ($q) {
+                if ($this->startDate) {
+                    $q->whereDate('service_start_date', '>=', $this->startDate);
+                }
+                if ($this->endDate) {
+                    $q->whereDate('service_start_date', '<=', $this->endDate);
+                }
+                $q->whereNotNull('amount_offer_revision'); // pastikan ada revenue
+                $q->where('amount_offer_revision', '>', 0); // kalau mau revenue > 0
+            })
+            ->whereBetween('created_at', [$this->startDate, $this->endDate])
+            ->count();
         $totalServices = $query->count();
 
         // Return data for the dashboard
