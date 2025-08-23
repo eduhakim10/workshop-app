@@ -35,7 +35,7 @@ class DashboardSeino extends Page
     {
         
         $query = Service::query();
-        
+     //   dd($this->CustomerId);
      //  dd($this->endDate);
         // Apply filters
         if ($this->startDate) {
@@ -45,12 +45,18 @@ class DashboardSeino extends Page
         if ($this->endDate) {
             $query->whereDate('service_start_date', '<=', $this->endDate);
         }
-
+        if ($this->CustomerId) {
+            $query->where('customer_id', '=', $this->CustomerId);
+        }
+        $query->where('stage', '=', 2);
         if ($this->status) {
             $query->where('status', $this->status);
         }
 
         if ($this->categoryServiceId) {
+            $query->where('category_service_id', $this->categoryServiceId);
+        }
+          if ($this->categoryServiceId) {
             $query->where('category_service_id', $this->categoryServiceId);
         }
 

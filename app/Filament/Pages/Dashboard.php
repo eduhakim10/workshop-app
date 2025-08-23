@@ -55,7 +55,7 @@ class Dashboard extends Page
         if ($this->categoryServiceId) {
             $query->where('category_service_id', $this->categoryServiceId);
         }
-
+        $query->where('stage', '=', 2);
         $revenue = $query->sum('amount_offer_revision');
       //  $newCustomers = Customer::whereBetween('created_at', [$this->startDate, $this->endDate])->count();
       $newCustomers = Customer::whereHas('services', function ($q) {
