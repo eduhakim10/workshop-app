@@ -266,9 +266,9 @@ class ServiceResource extends Resource
                         }
                     })
                     ->form([
-                        TextInput::make('offer_number')
-                            ->label('Offer Number')
-                            ->placeholder('Enter Offer Number'),
+                        TextInput::make('spk_number')
+                            ->label('SPK Number')
+                            ->placeholder('Enter SPK Number'),
                 ]),
                 SelectFilter::make('customer_id')
                     ->label('Customer')

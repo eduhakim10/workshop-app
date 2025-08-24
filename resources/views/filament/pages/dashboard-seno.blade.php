@@ -41,11 +41,11 @@
             </select>
         </div>
          <div class="flex flex-col">
-        <label for="category_services_id" class="block text-sm font-medium text-gray-700">Category Services</label>
+        <label for="category_services_id" class="block text-sm font-medium text-gray-700">Customer</label>
             <select id="category_services_id" name="customerId" class="p-2 border rounded w-full">
                 <option value="">All Customer</option>
                 @foreach ($this->getListCustomer() as $id => $name)
-                    <option value="{{ $id }}" {{ request('customerId') == $id ? 'selected' : '' }}>
+                    <option value="{{ $id }}" {{ $this->CustomerId == $id ? 'selected' : '' }}>
                         {{ $name }}
                     </option>
                 @endforeach
@@ -73,8 +73,8 @@
         </x-filament::card>
 
         <x-filament::card>
-            <h3 class="text-lg font-semibold">Total Quantity</h3>
-            <p class="text-2xl font-bold">0</p>
+            <!-- <h3 class="text-lg font-semibold">Total Quotation</h3>
+            <p class="text-2xl font-bold">0</p> -->
         </x-filament::card>
 
         <x-filament::card>
