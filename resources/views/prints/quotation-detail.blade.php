@@ -250,5 +250,11 @@
   {{ $service->preparedBy?->position }}
   </div>
 </div>
+DOC-MKT-03-MTI
+<div style="border: 1px solid #000; padding: 5px; width: 700px;">
+  Customer approval :
+  <br><br><br>
+
+</div>
 </body>
 </html>

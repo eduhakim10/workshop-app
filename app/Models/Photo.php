@@ -2,28 +2,20 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
-class ServicePhoto extends Model
+class Photo extends Model
 {
     use HasFactory;
 
     protected $fillable = [
         'service_id',
-        'type',
-        'file_path',
-        'uploaded_by'
-        
+        'path', // contoh, sesuaikan sama field yang lo bikin
     ];
 
     public function service()
     {
         return $this->belongsTo(Service::class);
     }
-    public function uploader()
-    {
-        return $this->belongsTo(User::class, 'uploaded_by');
-    }
-
 }

@@ -39,12 +39,15 @@ class Service extends Model
          'spk_number',
          'po_number',
          'created_at_offer',
-         'updated_at_offer'
+         'updated_at_offer',
+          'sr_number',
+        'service_request_id',
     ];
     protected $casts = [
         'items' => 'array',
         'items_offer' => 'array',
         'customer_id' => 'integer',
+        'kerusakan_after' => 'array',
 
     ];
     
@@ -83,9 +86,25 @@ class Service extends Model
     {
         return $this->belongsTo(Employee::class, 'assign_to', 'id');
     }
-    public function photos()
+    // public function photos()
+    // {
+    //     return $this->hasMany(ServicePhoto::class);
+    // }
+    public function serviceRequest()
     {
-        return $this->hasMany(ServicePhoto::class);
+        return $this->belongsTo(ServiceRequest::class, 'service_request_id');
     }
+
+    public function photosAfter()
+    {
+        return $this->hasMany(ServiceRequestPhoto::class, 'service_request_id', 'service_request_id')
+                    ->where('type', 'after');
+    }
+        public function photos()
+    {
+        return $this->hasMany(ServiceRequestPhoto::class, 'service_request_id', 'service_request_id');
+    }
+
+
 
 }

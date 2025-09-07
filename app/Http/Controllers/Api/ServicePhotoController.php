@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use App\Models\Service;
 use App\Models\ServicePhoto;
+use App\Models\ServiceRequestPhoto;
 use Illuminate\Support\Facades\Storage;
 
 class ServicePhotoController extends Controller
@@ -23,27 +25,37 @@ class ServicePhotoController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'service_id' => 'required|exists:services,id',
-            'type' => 'required|in:before,after',
-            'image' => 'required|image|max:2048',
-            'spk_number' => 'nullable|string',
-            'damage' => 'nullable|string',
+            'service_id' => 'nullable|integer', 
+            'kerusakan_after' => 'nullable|array',      // array of strings
+            'kerusakan_after.*' => 'string|max:255',
+            'photos.*' => 'nullable|image|max:2048',   // multiple images
         ]);
+        // $photos = [];
+        // $path = $request->file('image')->store('service_photos', 'public');
+            $service = Service::findOrFail($validated['service_id']);
+// Simpan kerusakan_after (json array)
+        if ($request->has('kerusakan_after')) {
+            $service->kerusakan_after = $validated['kerusakan_after'];
+            $service->save();
+        }
+         // Upload photos after
+        if ($request->hasFile('photos')) {
+            foreach ($request->file('photos') as $photo) {
+                $path = $photo->store('service_photos', 'public');
 
-        $path = $request->file('image')->store('service_photos', 'public');
-
-        $photo = ServicePhoto::create([
-            'service_id' => $validated['service_id'],
-            'type' => $validated['type'],
-            'image_path' => $path,
-            'spk_number' => $validated['spk_number'] ?? null,
-            'uploaded_by' => auth()->id(),
-            'damage' => $validated['damage'] ?? null,
-        ]);
-
-        return response()->json([
-            'message' => 'Photo uploaded successfully test',
-            'data' => $photo
+                ServiceRequestPhoto::create([
+                 //   'service_request_id' => $service->service_request_id, //ini nanti di uncoment pas udah testing
+                    'service_request_id' => 1, // ini di comment pas testing ya
+                    'file_path' => $path,
+                    'type' => 'after',
+                ]);
+            }
+        }
+ 
+    
+       return response()->json([
+            'message' => 'Service updated with after repair data',
+            'service' => $service->load('photosAfter'),
         ]);
     }
 }
