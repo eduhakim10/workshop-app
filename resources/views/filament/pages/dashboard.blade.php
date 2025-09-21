@@ -127,22 +127,44 @@
             type: 'bar',
             data: {
                 labels: @json($this->getCustomerRevenueData()['labels']),
-                datasets: [{
-                    label: 'Revenue by Customer',
-                    data: @json($this->getCustomerRevenueData()['data']),
-                    backgroundColor: 'rgba(255, 159, 64, 0.5)',
-                    borderColor: 'rgba(255, 159, 64, 1)',
-                    borderWidth: 1,
-                }]
+                datasets: [
+                    {
+                        label: 'Revenue by Customer',
+                        data: @json($this->getCustomerRevenueData()['revenue']),
+                        backgroundColor: 'rgba(255, 159, 64, 0.5)',
+                        borderColor: 'rgba(255, 159, 64, 1)',
+                        borderWidth: 1,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'Total Services',
+                        data: @json($this->getCustomerRevenueData()['services']),
+                        backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1,
+                        yAxisID: 'y1'
+                    }
+                ]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 scales: {
-                    y: { beginAtZero: true }
+                    y: {
+                        beginAtZero: true,
+                        position: 'left',
+                        title: { display: true, text: 'Revenue' }
+                    },
+                    y1: {
+                        beginAtZero: true,
+                        position: 'right',
+                        grid: { drawOnChartArea: false }, // biar nggak numpuk garis
+                        title: { display: true, text: 'Total Services' }
+                    }
                 }
             }
         });
+
 
         const serviceQuantityCtx = document.getElementById('serviceQuantityChart').getContext('2d');
         new Chart(serviceQuantityCtx, {

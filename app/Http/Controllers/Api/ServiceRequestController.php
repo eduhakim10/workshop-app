@@ -8,7 +8,7 @@ use App\Models\ServiceRequest;
 use App\Models\ServiceRequestPhoto;
 use Illuminate\Support\Facades\Storage;
 
-class ServiceRequestController extends Controller
+class ServiceRequestController extends Controller 
 {
     /**
      * Display a listing of the resource.

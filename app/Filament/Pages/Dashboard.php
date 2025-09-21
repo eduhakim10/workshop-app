@@ -32,7 +32,7 @@ class Dashboard extends Page
 
     
     }
-
+ 
     public function getStats()
     {
         
@@ -94,17 +94,36 @@ class Dashboard extends Page
     }
     public function getCustomerRevenueData()
     {
-    //    dd($this->startDate);
-        $data = Service::selectRaw('customers.name as customer, SUM(amount_offer_revision) as total_revenue')
+        $query = Service::selectRaw('customers.name as customer, SUM(amount_offer_revision) as total_revenue, COUNT(services.id) as total_services')
             ->join('customers', 'services.customer_id', '=', 'customers.id')
-            ->groupBy('customers.name')
-            ->get();
+            ->groupBy('customers.name');
+
+        if ($this->startDate) {
+            $query->whereDate('service_start_date', '>=', $this->startDate);
+        }
+
+        if ($this->endDate) {
+            $query->whereDate('service_start_date', '<=', $this->endDate);
+        }
+
+        if ($this->status) {
+            $query->where('status', $this->status);
+        }
+
+        if ($this->categoryServiceId) {
+            $query->where('category_service_id', $this->categoryServiceId);
+        }
+
+        $data = $query->get();
 
         return [
-            'labels' => $data->pluck('customer'),
-            'data' => $data->pluck('total_revenue'),
+            'labels'   => $data->pluck('customer'),
+            'revenue'  => $data->pluck('total_revenue'),
+            'services' => $data->pluck('total_services'),
         ];
-    }
+}
+
+
     public function getServiceQuantityData()
     {
         $data = Service::selectRaw('locations.name as location, COUNT(services.id) as total_services')
