@@ -92,6 +92,22 @@
         </x-filament::card>
     </div>
 
+     <div class="grid grid-cols-1 md:grid-cols-6 gap-6">
+
+             <x-filament::card class="h-[400px]">
+            <h3 class="text-lg font-semibold mb-2">Quantity X Category Items </h3>
+            <canvas id="categoryItemChart" class="max-h-[300px]"></canvas>
+        </x-filament::card>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-6 gap-6">
+
+             <x-filament::card class="h-[400px]">
+            <h3 class="text-lg font-semibold mb-2">Quantity X Category Items </h3>
+            <canvas id="categoryYearChart" class="max-h-[300px]"></canvas>
+        </x-filament::card>
+    </div>
+
     <!-- Load Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -157,6 +173,75 @@
                 }
             }
         });
+        const categoryItemCtx = document.getElementById('categoryItemChart').getContext('2d');
+        new Chart(categoryItemCtx, {
+            type: 'bar',
+            data: {
+                labels: @json($this->getCategoryItemQuantityData()['labels']),
+                datasets: [{
+                    label: 'Total Quantity per Category',
+                    data: @json($this->getCategoryItemQuantityData()['data']),
+                    backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: 'Quantity' }
+                    },
+                    x: {
+                        title: { display: true, text: 'Category' }
+                    }
+                }
+            }
+        });
+
+        const ctx = document.getElementById('categoryYearChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: @json($this->getCategoryItemQuantityPerYear()['labels']),
+                datasets: @json($this->getCategoryItemQuantityPerYear()['datasets']).map((dataset, index) => {
+                    const colors = [
+                        'rgba(75, 192, 192, 0.5)',  // hijau muda
+                        'rgba(255, 206, 86, 0.5)',  // kuning
+                        'rgba(54, 162, 235, 0.5)',  // biru
+                        'rgba(255, 99, 132, 0.5)'   // merah (kalau ada tahun lebih)
+                    ];
+                    const borders = [
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 99, 132, 1)'
+                    ];
+                    return {
+                        ...dataset,
+                        backgroundColor: colors[index % colors.length],
+                        borderColor: borders[index % borders.length],
+                        borderWidth: 1
+                    };
+                })
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: 'Quantity' }
+                    },
+                    x: {
+                        title: { display: true, text: 'Category' }
+                    }
+                }
+            }
+        });
+
 
 
 

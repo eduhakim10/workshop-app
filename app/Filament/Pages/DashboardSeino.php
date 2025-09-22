@@ -214,4 +214,115 @@ class DashboardSeino extends Page
         return auth()->user()->can('view dashboard');
     }
 
+    public function getCategoryItemQuantityData()
+    {
+        $services = Service::pluck('items'); // ambil semua kolom items
+
+        $totals = [];
+
+        foreach ($services as $itemsJson) {
+            if (empty($itemsJson) || !is_string($itemsJson)) {
+                continue;
+            }
+            $items = json_decode($itemsJson, true); // decode ke array
+
+            if (is_array($items)) {
+                foreach ($items as $item) {
+                    $categoryId = $item['category_item_id'];
+                    $qty = (int) $item['quantity'];
+
+                    if (!isset($totals[$categoryId])) {
+                        $totals[$categoryId] = 0;
+                    }
+
+                    $totals[$categoryId] += $qty;
+                }
+            }
+        }
+
+    // ambil nama kategori dari tabel category_items
+        $categoryNames = \DB::table('category_items')
+            ->whereIn('id', array_keys($totals))
+            ->pluck('name', 'id');
+
+        $labels = [];
+        $data   = [];
+
+        foreach ($totals as $categoryId => $qty) {
+            $labels[] = $categoryNames[$categoryId] ?? "Category {$categoryId}";
+            $data[]   = $qty;
+        }
+
+        return [
+            'labels' => $labels,
+            'data'   => $data,
+        ];
+    }
+    public function getCategoryItemQuantityPerYear()
+    {
+        $services = Service::select('items', \DB::raw('YEAR(service_start_date) as year'))
+            ->get();
+
+        $totals = []; // [categoryName][year] => qty
+       // dd($services);
+        foreach ($services as $service) {
+            if (empty($service->items) || !is_string($service->items)) {
+                continue;
+            }
+
+            $items = json_decode($service->items, true);
+
+            if (is_array($items)) {
+                foreach ($items as $item) {
+                    $categoryId = $item['category_item_id'] ?? null;
+                    $qty = isset($item['quantity']) ? (int) $item['quantity'] : 0;
+
+                    if ($categoryId && $qty > 0) {
+                        $totals[$categoryId][$service->year] = ($totals[$categoryId][$service->year] ?? 0) + $qty;
+                    }
+                }
+            }
+        }
+
+        // ambil nama kategori
+        $categoryNames = \DB::table('category_items')
+            ->whereIn('id', array_keys($totals))
+            ->pluck('name', 'id');
+
+        // siapin data untuk chart
+        $labels = []; // kategori
+        $years  = []; // semua tahun unik
+        $datasets = [];
+
+        foreach ($totals as $categoryId => $yearData) {
+            $labels[$categoryId] = $categoryNames[$categoryId] ?? "Category {$categoryId}";
+            foreach (array_keys($yearData) as $year) {
+                $years[$year] = true;
+            }
+        }
+
+        $labels = array_values($labels);
+        $years  = array_keys($years);
+        sort($years);
+
+        // bikin dataset per tahun
+        foreach ($years as $year) {
+            $data = [];
+            foreach ($totals as $categoryId => $yearData) {
+                $data[] = $yearData[$year] ?? 0;
+            }
+            $datasets[] = [
+                'label' => $year,
+                'data'  => $data,
+            ];
+        }
+       
+        return [
+            'labels'   => $labels,   // nama kategori
+            'datasets' => $datasets, // isi data per tahun
+        ];
+    }
+
+
+
 }

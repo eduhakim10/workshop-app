@@ -20,6 +20,13 @@ class ServiceRequestController extends Controller
         );
     }
 
+    public function damages()
+    {
+        return response()->json(
+            Damage::latest()->get()
+        );
+    }
+
     /**
      * Store a newly created resource in storage.
      */

@@ -98,8 +98,19 @@ class ServiceResource extends Resource
             DatePicker::make('handover_offer_date'),
             TextInput::make('work_order_number'),
             DatePicker::make('work_order_date'),
+            
             TextInput::make('invoice_number'),
             DatePicker::make('invoice_handover_date'),
+              DatePicker::make('invoice_payment_date'),
+            Select::make('document_position')
+            ->options([
+                'pcs' => 'Karawang',
+                'kg' => 'Balaraja',
+                'liters' => 'Cikampek',
+                'Lembar' => 'Karawang Barat',
+                'Meter' => 'MT Haryono',
+            ])
+            ->required(),
             Select::make('assign_to')
                 ->label('Assign to')
                 ->relationship('employee', 'name')
@@ -207,6 +218,7 @@ class ServiceResource extends Resource
             ->columns([
                 TextColumn::make('offer_number')->label('Offer Number')->searchable(),
                 TextColumn::make('spk_number')->label('SPK Number')->searchable(),
+                TextColumn::make('amount_offer_revision')->label('Amount')->searchable(),
                 TextColumn::make('customer.name')->label('Customer')->searchable(),
                 TextColumn::make('vehicle.license_plate')->label('License Plate')->searchable(),
                 TextColumn::make('location.name')->label('Location'), // New column for Location
