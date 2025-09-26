@@ -316,7 +316,9 @@ class DashboardSeino extends Page
                 'data'  => $data,
             ];
         }
-       
+        // echo '<pre>';
+        // print_r($datasets);
+        // die;
         return [
             'labels'   => $labels,   // nama kategori
             'datasets' => $datasets, // isi data per tahun

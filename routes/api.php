@@ -21,10 +21,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/service-photos', [ServicePhotoController::class, 'store']);
     Route::get('/service-photos/{service}', [ServicePhotoController::class, 'index']);
     Route::get('/service-requests', [ServiceRequestController::class, 'index']);
+      Route::get('/damages', [ServiceRequestController::class, 'damages']);
 
     Route::get('/customers', [CustomerController::class, 'index']);
     Route::get('/customers/{id}/vehicles', [CustomerController::class, 'vehicles']);
-
+    Route::delete('/service-requests/{id}', [ServiceRequestController::class, 'destroy']);
 
 
     Route::post('/service-requests', [ServiceRequestController::class, 'store']);

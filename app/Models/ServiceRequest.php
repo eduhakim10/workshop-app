@@ -52,4 +52,9 @@ class ServiceRequest extends Model
     {
         return $this->hasMany(ServiceRequestPhoto::class, 'service_request_id');
     }
+        public function damages()
+    {
+        return $this->belongsToMany(Damage::class, 'services_request_damages')
+                    ->withTimestamps();
+    }
 }
