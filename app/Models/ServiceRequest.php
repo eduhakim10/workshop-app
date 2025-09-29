@@ -17,6 +17,7 @@ class ServiceRequest extends Model
         'customer_id',
         'kerusakan',
         'created_by',
+        'vehicle_id',
 
         // tambahin field lain sesuai migration
     ];
@@ -56,5 +57,10 @@ class ServiceRequest extends Model
     {
         return $this->belongsToMany(Damage::class, 'services_request_damages')
                     ->withTimestamps();
+    }
+    // Relasi ke Vehicle
+    public function vehicle()
+    {
+        return $this->belongsTo(Vehicle::class);
     }
 }

@@ -8,6 +8,10 @@ use App\Models\ServiceRequest;
 use App\Models\Damage;
 use App\Models\ServiceRequestPhoto;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+
+
 
 class ServiceRequestController extends Controller 
 {
@@ -41,7 +45,7 @@ class ServiceRequestController extends Controller
             'customer_id'  => 'required|exists:customers,id',
             'kerusakan'    => 'nullable|array',
             'kerusakan.*'  => 'exists:damages,id', // pastikan damage_id valid
-
+            'vehicle_id' => 'required|exists:vehicles,id',
             'notes'    =>       'nullable|string',
             'photos.*'     => 'nullable|image|max:2048', // multiple images
         ]);
@@ -77,26 +81,86 @@ class ServiceRequestController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(ServiceRequest $serviceRequest)
+    public function show($id)
     {
-        return response()->json($serviceRequest->load('photos', 'customer'));
+        $serviceRequest = ServiceRequest::with(['customer', 'vehicle', 'damages','photos'])
+            ->find($id);
+
+        if (!$serviceRequest) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Service Request not found'
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $serviceRequest
+        ]);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, ServiceRequest $serviceRequest)
+    public function update(Request $request, $id)
     {
+        // print_r($request->customer_id);
+        // die;
+        // echo $id;die;
+        // // dd($request->all());
+        \Log::info('Update ServiceRequest payload', $request->all());
+        \Log::info('Update ServiceRequest payload: ' . json_encode($request->all()));
+        // die;
+
+        $serviceRequest = ServiceRequest::findOrFail($id);
+    
+        // 🔹 Validasi (optional, bisa lu sesuaikan)
         $validated = $request->validate([
-            'sr_number'    => 'sometimes|string|unique:service_requests,sr_number,' . $serviceRequest->id,
-            'customer_id'  => 'sometimes|exists:customers,id',
-            'kerusakan'    => 'nullable|string',
+            'jenis' => 'nullable|string',
+            'customer_id' => 'required|exists:customers,id',
+            'vehicle_id' => 'required|exists:vehicles,id',
+            'kerusakan' => 'array',
+            'kerusakan.*' => 'exists:damages,id',
+            'notes' => 'nullable|string',
+            'photos.*' => 'image|max:2048', // 2MB max
         ]);
-
-        $serviceRequest->update($validated);
-
-        return response()->json($serviceRequest->load('photos', 'customer'));
+    
+        // 🔹 Update field basic
+        $serviceRequest->customer_id = $request->customer_id;
+        $serviceRequest->vehicle_id = $request->vehicle_id;
+        $serviceRequest->notes = $request->notes ?? null;
+    
+        // 🔹 Mapping jenis ke status / flag lain (optional)
+        // if ($request->filled('jenis')) {
+        //     $serviceRequest->jenis = $request->jenis;
+        // }
+    
+        $serviceRequest->save();
+    
+        // 🔹 Update kerusakan (pivot table)
+        if ($request->has('kerusakan')) {
+            $serviceRequest->damages()->sync($request->kerusakan);
+        }
+    
+        // 🔹 Upload & simpan foto baru
+        if ($request->hasFile('photos')) {
+            foreach ($request->file('photos') as $photo) {
+                $path = $photo->store('service_requests', 'public');
+    
+                $serviceRequest->photos()->create([
+                    'type' => 'before', // atau from request
+                    'file_path' => $path,
+                ]);
+            }
+        }
+    
+        return response()->json([
+            'success' => true,
+            'message' => 'Service Request updated successfully',
+            'data' => $serviceRequest->load(['customer', 'vehicle', 'damages', 'photos']),
+        ]);
     }
+    
 
     /**
      * Remove the specified resource from storage.
@@ -108,10 +172,11 @@ class ServiceRequestController extends Controller
     
             // cek apakah sr_number ada di services (offer_number)
             $exists = DB::table('services')
+                    ->where('service_request_id', $id) // cek service terkait request yang mau dihapus
                     ->whereNotNull('status')
                     ->where('status', '<>', 'Draft')
                     ->exists();
-    
+            
             if ($exists) {
                 return response()->json([
                     'success' => false,
