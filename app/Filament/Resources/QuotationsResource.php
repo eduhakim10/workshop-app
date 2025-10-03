@@ -2,7 +2,9 @@
 
 namespace App\Filament\Resources;
 
-use Filament\Pages\Actions\Action;
+// use Filament\Pages\Actions\Action;
+use Filament\Forms\Components\Actions\Action; // ✅ bener
+
 use App\Filament\Resources\ServiceResource;
 
 use App\Filament\Resources\QuotationsResource\Pages;
@@ -24,7 +26,7 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Forms\Components\Repeater;
 use App\Models\CategoryService;
 use Filament\Forms\Components\Placeholder;
-
+use App\Models\ServiceRequest;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Password;
 use Filament\Tables\Columns\TextColumn;
@@ -54,35 +56,141 @@ class QuotationsResource extends Resource
     {
         return $form
         ->schema([
+          
+            // Select::make('service_request_id')
+            // ->label('Service Request (SR Number)')
+            // ->relationship(
+            //     name: 'serviceRequest', // nama relasi di model Service
+            //     titleAttribute: 'sr_number' // tampilkan sr_number
+            // )
+            // ->options(function () {
+            //     $usedSrIds = \App\Models\Service::whereNotNull('service_request_id')
+            //         ->pluck('service_request_id')
+            //         ->unique()
+            //         ->toArray();
+        
+            //     return \App\Models\ServiceRequest::whereNotIn('id', $usedSrIds)
+            //         ->with('customer')
+            //         ->get()
+            //         ->mapWithKeys(fn($sr) => [
+            //             $sr->id => ($sr->sr_number ?? 'No SR') . ' - ' . ($sr->customer?->name ?? 'No Customer')
+            //         ])
+            //         ->toArray();
+            // })
+            // ->searchable()
+            // ->preload()
+            // ->reactive()
+            // ->afterStateUpdated(function ($state, callable $set) {
+            //     if ($state) {
+            //         $sr = \App\Models\ServiceRequest::with('customer')->find($state);
+            //         if ($sr && $sr->customer) {
+            //             $set('customer_id', $sr->customer->id);
+            //         }
+            //         if ($sr?->vehicle) {
+            //             $set('vehicle_id', $sr->vehicle->id);
+            //         }
+            //     } else {
+            //         $set('customer_id', null);
+            //     }
+            // })
+            // ->suffixAction( // 👈 tombol preview di sebelah kanan dropdown
+            //     Action::make('preview')
+            //         ->icon('heroicon-o-eye')
+            //         ->label('Preview')
+            //         ->url(fn ($state) => $state 
+            //             ? route('service-requests.show', $state) // arahkan ke detail page
+            //             : null, true // true = open in new tab
+            //         )
+            //         ->visible(fn ($state) => filled($state)) // tampil hanya kalau ada yg dipilih
+            // )
+            // ->required(),
+
+            Select::make('service_request_id')
+                    ->label('Service Request (SR Number)')
+                    ->relationship(
+                        name: 'serviceRequest', // relasi di model Service
+                        titleAttribute: 'sr_number' // tampilkan sr_number
+                    )
+                    ->options(function () {
+                        $usedSrIds = \App\Models\Service::whereNotNull('service_request_id')
+                            ->pluck('service_request_id')
+                            ->unique()
+                            ->toArray();
+
+                        return \App\Models\ServiceRequest::whereNotIn('id', $usedSrIds)
+                            ->with(['customer', 'vehicle'])
+                            ->get()
+                            ->mapWithKeys(fn($sr) => [
+                                $sr->id => ($sr->sr_number ?? 'No SR') 
+                                    . ' - ' . ($sr->customer?->name ?? 'No Customer')
+                                    . ' - ' . ($sr->vehicle?->license_plate ?? 'No Vehicle')
+                            ])
+                            ->toArray();
+                    })
+                    ->searchable()
+                    ->preload()
+                    ->reactive()
+                    ->afterStateUpdated(function ($state, callable $set) {
+                        if ($state) {
+                            $sr = \App\Models\ServiceRequest::with(['customer', 'vehicle'])->find($state);
+
+                            if ($sr?->customer) {
+                                $set('customer_id', $sr->customer->id);
+                            } else {
+                                $set('customer_id', null);
+                            }
+
+                            if ($sr?->vehicle) {
+                                $set('vehicle_id', $sr->vehicle->id);
+                            } else {
+                                $set('vehicle_id', null);
+                            }
+                        } else {
+                            $set('customer_id', null);
+                            $set('vehicle_id', null);
+                        }
+                    })
+                    ->suffixAction(
+                        \Filament\Forms\Components\Actions\Action::make('preview')
+                            ->icon('heroicon-o-eye')
+                            ->label('Preview')
+                            ->url(fn ($state) => $state 
+                                ? route('service-requests.show', $state)
+                                : null, true
+                            )
+                            ->visible(fn ($state) => filled($state))
+                    )
+                    ->required(),
+
+        
+            Select::make('customer_id')
+            ->label('Customer')
+            ->relationship('customer', 'name')
+            ->searchable()
+            ->disabled() 
+            ->dehydrated() // <-- ini kunci nya bro
+            ->required(),
+
+            Select::make('vehicle_id')
+            ->label('Vehicle')
+            ->relationship('vehicle', 'license_plate')
+            ->searchable()
+            ->disabled()
+            ->required(),
+        
+        
+
+
+
+        
+        
             // Existing fields...
             Select::make('location_id')
                 ->label('Location')
                 ->relationship('location', 'name') // Assuming the Location model has a `name` field
                 ->required(),
 
-            Select::make('customer_id')
-                ->label('Customer')
-                ->relationship('customer', 'name')
-                ->reactive()
-                ->searchable()
-                ->required(),
-
-            // Select::make('vehicle_id')
-            //     ->label('Vehicle')
-            //     ->options(fn (callable $get) => Vehicle::where('customer_id', $get('customer_id'))->pluck('license_plate', 'id'))
-            //     ->searchable()
-            //     ->required(),
-            // Select::make('category_service_id')
-            //     ->label('Category Service')
-            //     ->options(CategoryService::pluck('name', 'id')->toArray())
-            //     ->required()
-            //     ->searchable(),
-            // TextInput::make('offer_number')
-            //     ->label('Offer Number')
-            //     ->default(fn () => OfferHelper::generateOfferNumber())
-            //     // ->disabled() // supaya user ga bisa ubah
-            //     ->dehydrated() // tetap disimpan walaupun disabled
-            //     ->required(),
+        
             TextInput::make('offer_number')
                 ->label('Offer Number')
                 ->default(fn () => OfferHelper::generateOfferNumber())
@@ -212,21 +320,24 @@ class QuotationsResource extends Resource
 
 
     Placeholder::make('total_items_price')
-        ->label('Total Price')
-        ->content(function (callable $get) {
-            $items = $get('items_offer') ?? [];
-            $total = 0;
+    ->label('Total Price')
+    ->content(function (callable $get) {
+        $groups = $get('items_offer') ?? [];
+        $total = 0;
 
+        foreach ($groups as $group) {
+            $items = $group['items'] ?? [];
             foreach ($items as $item) {
                 $price = isset($item['sales_price']) ? floatval($item['sales_price']) : 0;
                 $qty = isset($item['quantity']) ? floatval($item['quantity']) : 0;
                 $total += $price * $qty;
             }
+        }
 
-            return 'Rp ' . number_format($total, 0, ',', '.');
-        })
-        ->reactive() // Penting
-        ->columnSpanFull(),
+        return 'Rp ' . number_format($total, 0, ',', '.');
+    })
+    ->reactive() // biar update realtime
+    ->columnSpanFull(),
             ]);
 
         

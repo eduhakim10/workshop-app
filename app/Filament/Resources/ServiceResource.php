@@ -69,29 +69,30 @@ class ServiceResource extends Resource
                 ->options(CategoryService::pluck('name', 'id')->toArray())
                 ->required()
                 ->searchable(),
-           TextInput::make('offer_number')
-            ->label('Offer Number')
-            ->required()
-            ->disabled()
-            ->rule(function (callable $get) {
-                return function (string $attribute, $value, Closure $fail) use ($get) {
-                    $vehicleId = $get('vehicle_id');
+        //    TextInput::make('offer_number')
+        //     ->label('Offer Number')
+        //     ->required()
+        //     ->disabled()
+        //     ->rule(function (callable $get) {
+        //         return function (string $attribute, $value, Closure $fail) use ($get) {
+        //             $vehicleId = $get('vehicle_id');
 
-                    if (!$vehicleId) {
-                        return; // skip validation kalau vehicle belum dipilih
-                    }
+        //             if (!$vehicleId) {
+        //                 return; // skip validation kalau vehicle belum dipilih
+        //             }
 
-                    $exists = \App\Models\Service::where('offer_number', $value)
-                        ->where('vehicle_id', $vehicleId)
-                        ->exists();
+        //             $exists = \App\Models\Service::where('offer_number', $value)
+        //                 ->where('vehicle_id', $vehicleId)
+        //                 ->exists();
 
-                    if ($exists) {
-                        $fail("Kombinasi Offer Number dan Plat Nomor sudah digunakan.");
-                    }
-                };
-            }),
+        //             if ($exists) {
+        //                 $fail("Kombinasi Offer Number dan Plat Nomor sudah digunakan.");
+        //             }
+        //         };
+        //     }),
+            TextInput::make('offer_number')->required(),
 
-            TextInput::make('spk_number')->required(),
+            // TextInput::make('spk_number')->required(),
             TextInput::make('po_number')->required(),
             TextInput::make('amount_offer')->numeric()->required(),
             TextInput::make('amount_offer_revision')->numeric(),
@@ -217,7 +218,7 @@ class ServiceResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('offer_number')->label('Offer Number')->searchable(),
-                TextColumn::make('spk_number')->label('SPK Number')->searchable(),
+                TextColumn::make('work_order_number')->label('Work Order Number')->searchable(),
                 TextColumn::make('amount_offer_revision')->label('Amount')->searchable(),
                 TextColumn::make('customer.name')->label('Customer')->searchable(),
                 TextColumn::make('vehicle.license_plate')->label('License Plate')->searchable(),
@@ -270,15 +271,15 @@ class ServiceResource extends Resource
                             ->label('Offer Number')
                             ->placeholder('Enter Offer Number'),
                 ]),
-                  Filter::make('spk_number')
-                    ->label('SPK Number')
+                  Filter::make('work_order_number')
+                    ->label('Work Order Number')
                     ->query(function (Builder $query, $data) {
-                        if (!empty($data['spk_number'])) {
-                            $query->where('spk_number', 'like', '%' . $data['spk_number'] . '%');
+                        if (!empty($data['work_order_number'])) {
+                            $query->where('work_order_number', 'like', '%' . $data['work_order_number'] . '%');
                         }
                     })
                     ->form([
-                        TextInput::make('spk_number')
+                        TextInput::make('work_order_number')
                             ->label('SPK Number')
                             ->placeholder('Enter SPK Number'),
                 ]),

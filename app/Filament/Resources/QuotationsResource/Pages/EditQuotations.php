@@ -27,7 +27,30 @@ class EditQuotations extends EditRecord
                     $quotation->stage = 2;
                     $quotation->updated_at_offer = now();
                     $quotation->updated_at = now();
-                     $quotation->items = $quotation->items_offer;
+
+                    $itemsOffer = $quotation->items_offer;
+
+                    // Kalau masih string JSON → decode
+                    if (is_string($itemsOffer)) {
+                        $itemsOffer = json_decode($itemsOffer, true);
+                    }
+                    
+                    $finalItems = [];
+                    
+                    foreach ($itemsOffer as $group) {
+                        if (isset($group['items']) && is_array($group['items'])) {
+                            foreach ($group['items'] as $item) {
+                                $finalItems[] = $item;
+                            }
+                        } else {
+                            $finalItems[] = $group;
+                        }
+                    }
+                    
+                    // jangan encode, langsung assign array
+                    $quotation->items = $finalItems;
+                    
+
                     $this->record->save();
 
                  //   $this->notify('success', 'Quotation approved as service.');
@@ -37,7 +60,7 @@ class EditQuotations extends EditRecord
                     ->send();
                     $this->redirect(ServiceResource::getUrl());
                 })
-                ->visible(fn () => $this->record->stage == 1), // Optional: hanya tampil jika belum di-approve
+                ->visible(fn () => $this->record->stage == 1), 
 
 
                  Action::make('Print Overview')

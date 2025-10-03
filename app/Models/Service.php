@@ -92,7 +92,8 @@ class Service extends Model
     // }
     public function serviceRequest()
     {
-        return $this->belongsTo(ServiceRequest::class, 'service_request_id');
+        // pastiin foreign key bener
+        return $this->belongsTo(ServiceRequest::class, 'service_request_id', 'id');
     }
 
     public function photosAfter()
@@ -104,6 +105,27 @@ class Service extends Model
     {
         return $this->hasMany(ServiceRequestPhoto::class, 'service_request_id', 'service_request_id');
     }
+    public function damages()
+    {
+        return $this->hasMany(ServiceRequestDamage::class, 'service_request_id', 'service_request_id');
+    }
+    protected static function booted()
+    {
+        static::creating(function ($service) {
+            if ($service->service_request_id) {
+                $sr = \App\Models\ServiceRequest::find($service->service_request_id);
+                $service->sr_number = $sr?->sr_number;
+            }
+        });
+
+        static::updating(function ($service) {
+            if ($service->service_request_id) {
+                $sr = \App\Models\ServiceRequest::find($service->service_request_id);
+                $service->sr_number = $sr?->sr_number;
+            }
+        });
+    }
+
 
 
 

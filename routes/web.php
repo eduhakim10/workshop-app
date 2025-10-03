@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\QuotationPrintController;
+use App\Http\Controllers\ServiceRequestController;
 
 
 Route::get('/', function () {
@@ -9,3 +10,5 @@ Route::get('/', function () {
 });
 Route::get('/quotation/{service}/print-overview', [QuotationPrintController::class, 'overview'])->name('quotation.print.overview');
 Route::get('/quotation/{service}/print-detail', [QuotationPrintController::class, 'detail'])->name('quotation.print.detail');
+Route::get('/service-requests/{id}', [ServiceRequestController::class, 'show'])
+    ->name('service-requests.show');

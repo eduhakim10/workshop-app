@@ -14,12 +14,13 @@ class ServicesController extends Controller
         // Ambil user yang login
         $user = $request->user();
 
-        // Misalnya: hanya tampilkan SPK yang status-nya 'Scheduled' dan 'In Progress'
         // atau yang terkait sama employee_id
-        $services = Service::with(['vehicle', 'customer'])
+            $services = Service::with(['vehicle', 'customer'])
             ->whereIn('status', ['Scheduled', 'In Progress'])
+            ->whereNotNull('work_order_number')
             ->orderBy('created_at', 'desc')
             ->get();
+    
 
         return response()->json([
             'data' => $services
@@ -27,10 +28,20 @@ class ServicesController extends Controller
     }
 
     // Ambil detail SPK tertentu
-    public function show(Service $service)
+    // public function show(Service $service)
+    // {
+    //     return response()->json([
+    //         'data' => $service->load(['vehicle', 'customer']),
+    //     ]);
+    // }
+    public function show($id)
     {
+        $service = Service::with(['customer', 'vehicle', 'afterPhotos', 'damages'])
+            ->findOrFail($id);
+
         return response()->json([
-            'data' => $service->load(['vehicle', 'customer']),
+            'success' => true,
+            'data' => $service,
         ]);
     }
 }
