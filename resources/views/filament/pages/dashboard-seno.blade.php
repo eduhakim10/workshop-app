@@ -95,7 +95,7 @@
      <div class="grid grid-cols-1 md:grid-cols-6 gap-6">
 
              <x-filament::card class="h-[400px]">
-            <h3 class="text-lg font-semibold mb-2">Quantity X Category Items </h3>
+            <h3 class="text-lg font-semibold mb-2"> </h3>
             <canvas id="categoryItemChart" class="max-h-[300px]"></canvas>
         </x-filament::card>
     </div>
@@ -103,7 +103,7 @@
     <div class="grid grid-cols-1 md:grid-cols-6 gap-6">
 
              <x-filament::card class="h-[400px]">
-            <h3 class="text-lg font-semibold mb-2">Quantity X Category Items </h3>
+            <h3 class="text-lg font-semibold mb-2"> </h3>
             <canvas id="categoryYearChart" class="max-h-[300px]"></canvas>
         </x-filament::card>
     </div>
@@ -114,6 +114,7 @@
     <!-- JavaScript for Charts -->
     <script>
       
+  
 
         const serviceChartCtx = document.getElementById('serviceChart').getContext('2d');
         new Chart(serviceChartCtx, {
@@ -173,74 +174,137 @@
                 }
             }
         });
-        const categoryItemCtx = document.getElementById('categoryItemChart').getContext('2d');
-        new Chart(categoryItemCtx, {
-            type: 'bar',
-            data: {
-                labels: @json($this->getCategoryItemQuantityData()['labels']),
-                datasets: [{
-                    label: 'Total Quantity per Category',
-                    data: @json($this->getCategoryItemQuantityData()['data']),
-                    backgroundColor: 'rgba(75, 192, 192, 0.5)',
-                    borderColor: 'rgba(75, 192, 192, 1)',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        title: { display: true, text: 'Quantity' }
-                    },
-                    x: {
-                        title: { display: true, text: 'Category' }
-                    }
-                }
-            }
-        });
+        document.addEventListener("DOMContentLoaded", function () {
+    const labels = @json($this->getCategoryItemQuantityData()['labels']);
+    const data = @json($this->getCategoryItemQuantityData()['data']);
 
-        const ctx = document.getElementById('categoryYearChart').getContext('2d');
-        new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: @json($this->getCategoryItemQuantityPerYear()['labels']),
-                datasets: @json($this->getCategoryItemQuantityPerYear()['datasets']).map((dataset, index) => {
-                    const colors = [
-                        'rgba(75, 192, 192, 0.5)',  // hijau muda
-                        'rgba(255, 206, 86, 0.5)',  // kuning
-                        'rgba(54, 162, 235, 0.5)',  // biru
-                        'rgba(255, 99, 132, 0.5)'   // merah (kalau ada tahun lebih)
-                    ];
-                    const borders = [
-                        'rgba(75, 192, 192, 1)',
-                        'rgba(255, 206, 86, 1)',
-                        'rgba(54, 162, 235, 1)',
-                        'rgba(255, 99, 132, 1)'
-                    ];
-                    return {
-                        ...dataset,
-                        backgroundColor: colors[index % colors.length],
-                        borderColor: borders[index % borders.length],
-                        borderWidth: 1
-                    };
-                })
+    console.log("Labels:", labels);
+    console.log("Data:", data);
+
+    const ctx = document.getElementById('categoryItemChart').getContext('2d');
+
+    // fungsi buat generate warna random biar beda tiap kategori
+    function getRandomColor(alpha = 0.6) {
+        const r = Math.floor(Math.random() * 255);
+        const g = Math.floor(Math.random() * 255);
+        const b = Math.floor(Math.random() * 255);
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+
+    // bikin array warna sebanyak jumlah kategori
+    const backgroundColors = labels.map(() => getRandomColor(0.6));
+    const borderColors = backgroundColors.map(c => c.replace('0.6', '1'));
+
+    // Cegah error kalau datanya kosong
+    if (!labels.length || !data.length) {
+        console.warn("⚠️ Tidak ada data untuk ditampilkan di chart.");
+        ctx.font = "16px Arial";
+        ctx.fillText("Tidak ada data untuk ditampilkan", 50, 50);
+        return;
+    }
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Total Quantity per Damages',
+                data: data,
+                backgroundColor: backgroundColors,
+                borderColor: borderColors,
+                borderWidth: 1,
+                borderRadius: 6, // biar bar-nya agak rounded
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    backgroundColor: '#222',
+                    titleColor: '#fff',
+                    bodyColor: '#fff'
+                },
+                title: {
+                    display: true,
+                    text: '📊 Total Quantity per Damages',
+                    color: '#333',
+                    font: { size: 18, weight: 'bold' }
+                }
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        title: { display: true, text: 'Quantity' }
-                    },
-                    x: {
-                        title: { display: true, text: 'Category' }
-                    }
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: { display: true, text: 'Quantity', color: '#666' },
+                    ticks: { stepSize: 1 }
+                },
+                x: {
+                    title: { display: true, text: 'Damages', color: '#666' }
                 }
             }
-        });
+        }
+    });
+});
+
+const ctx = document.getElementById('categoryYearChart').getContext('2d');
+const chartData = @json($this->getCategoryItemQuantityPerYear());
+
+// 🎨 Warna unik untuk setiap kategori
+const baseColors = [
+  'rgba(255, 99, 132, 0.6)',
+  'rgba(54, 162, 235, 0.6)',
+  'rgba(255, 206, 86, 0.6)',
+  'rgba(75, 192, 192, 0.6)',
+  'rgba(153, 102, 255, 0.6)',
+  'rgba(255, 159, 64, 0.6)',
+  'rgba(201, 203, 207, 0.6)',
+];
+
+// fungsi helper biar warna looping
+function getColor(index) {
+  return baseColors[index % baseColors.length];
+}
+
+// 🎨 Set warna per kategori
+new Chart(ctx, {
+  type: 'bar',
+  data: {
+    labels: chartData.labels,
+    datasets: chartData.datasets.map((set, i) => ({
+      label: set.label,
+      data: set.data,
+      backgroundColor: chartData.labels.map((_, idx) => getColor(idx)), // warna per kategori
+      borderColor: chartData.labels.map((_, idx) => getColor(idx).replace('0.6', '1')),
+      borderWidth: 1
+    }))
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      title: {
+        display: true,
+        text: 'Quantity per Damages per Year'
+      },
+      legend: {
+        position: 'top'
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        title: { display: true, text: 'Quantity' }
+      },
+      x: {
+        title: { display: true, text: 'Damages' }
+      }
+    }
+  }
+});
+
 
 
 

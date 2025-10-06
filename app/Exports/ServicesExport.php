@@ -20,6 +20,13 @@ class ServicesExport implements FromCollection, WithHeadings
     public function collection()
     {
         return Service::with(['customer', 'vehicle', 'assignTo'])
+        ->when($this->filters['seino_no'] ?? null, function ($query, $seinoNo) {
+            if ($seinoNo === 'Seino') {
+                $query->where('customer_id', 1);
+            } elseif ($seinoNo === 'Non Seino') {
+                $query->where('customer_id', '!=', 1);
+            }
+        })
         ->when($this->filters['location_id'] ?? null, fn ($query, $locationId) => $query->where('location_id', $locationId))
         ->when($this->filters['customer_id'] ?? null, fn ($query, $customerId) => $query->where('customer_id', $customerId))
         ->when($this->filters['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
