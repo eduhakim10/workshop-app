@@ -5,6 +5,9 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Service;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use App\Models\ServiceRequestPhoto;
+use App\Models\ServicesRequestDamage;
 
 class ServicesController extends Controller
 {
@@ -34,10 +37,85 @@ class ServicesController extends Controller
     //         'data' => $service->load(['vehicle', 'customer']),
     //     ]);
     // }
+    public function updateAfter(Request $request, $id)
+    {
+        // print_r($request->input());
+        // die;
+        // Validasi input
+        $request->validate([
+            'after_notes' => 'nullable|string',
+            'after_photos.*' => 'nullable|image|max:5120', // max 5MB per file
+            'after_damages' => 'nullable|array',
+            'after_damages.*.damage_id' => 'required|integer|exists:damages,id',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $service = Service::findOrFail($id);
+
+            // 1️⃣ Update notes_after
+            $service->notes_after = $request->after_notes;
+            $service->save();
+
+            // 2️⃣ Upload foto after & insert ke service_request_photos
+            if ($request->hasFile('after_photos')) {
+                foreach ($request->file('after_photos') as $file) {
+                    $path = $file->store('after_photos', 'public');
+
+                    ServiceRequestPhoto::create([
+                        'service_request_id' => $service->service_request_id,
+                        'file_path' => $path,
+                        'type' => 'after',
+                    ]);
+                }
+            }
+
+            // 3️⃣ Insert kerusakan after ke services_request_damages
+            if ($request->filled('after_damages')) {
+                foreach ($request->after_damages as $damage) {
+                    ServicesRequestDamage::create([
+                        'service_request_id' => $service->service_request_id,
+                        'damage_id' => $damage['damage_id'],
+                        'damage_name' => $damage['damage_name'] ?? null,
+                        'type' => 'after',
+                    ]);
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Data After berhasil diupdate',
+                'after_photos' => ServiceRequestPhoto::where('service_request_id', $service->service_request_id)
+                    ->where('type', 'after')
+                    ->get(),
+                'after_damages' => ServicesRequestDamage::where('service_request_id', $service->service_request_id)
+                    ->where('type', 'after')
+                    ->get(),
+            ]);
+
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal update data After',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
     public function show($id)
     {
-        $service = Service::with(['customer', 'vehicle', 'afterPhotos', 'damages'])
-            ->findOrFail($id);
+        $service = Service::with([
+            'customer',
+            'vehicle',
+            'afterPhotos',
+            'beforePhotos',
+            'beforedamages.damage',
+            'afterdamages.damage',
+            'assignTo'
+        ])->findOrFail($id);
+        
 
         return response()->json([
             'success' => true,

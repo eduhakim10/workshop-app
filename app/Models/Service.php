@@ -101,14 +101,37 @@ class Service extends Model
         return $this->hasMany(ServiceRequestPhoto::class, 'service_request_id', 'service_request_id')
                     ->where('type', 'after');
     }
+    public function beforePhotos()
+    {
+        return $this->hasMany(\App\Models\ServiceRequestPhoto::class, 'service_request_id', 'service_request_id')
+            ->where('type', 'before');
+    }
+
+    public function afterPhotos()
+    {
+        return $this->hasMany(\App\Models\ServiceRequestPhoto::class, 'service_request_id', 'service_request_id')
+            ->where('type', 'after');
+    }
+
         public function photos()
     {
         return $this->hasMany(ServiceRequestPhoto::class, 'service_request_id', 'service_request_id');
     }
     public function damages()
     {
-        return $this->hasMany(ServiceRequestDamage::class, 'service_request_id', 'service_request_id');
+        return $this->hasMany(ServicesRequestDamage::class, 'service_request_id', 'service_request_id');
     }
+    public function beforedamages()
+    {
+        return $this->hasMany(ServicesRequestDamage::class, 'service_request_id', 'service_request_id') ->where('type', 'before')->with('damage');;
+    }
+    public function afterdamages()
+    {
+        return $this->hasMany(ServicesRequestDamage::class, 'service_request_id', 'service_request_id') ->where('type', 'after')->with('damage');;;
+    }
+    
+    
+    
     protected static function booted()
     {
         static::creating(function ($service) {

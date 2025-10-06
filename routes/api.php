@@ -18,7 +18,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/profile', [ProfileController::class, 'me']);
 
   //  Route::get('/services/{service}', [ServicesController::class, 'show']);
-    Route::get('/services/{id}', [ServiceController::class, 'show']);
+    Route::get('/services/{id}', [ServicesController::class, 'show']);
+    Route::post('/services/{id}', [ServicesController::class, 'updateAfter']);
     Route::post('/service-photos', [ServicePhotoController::class, 'store']);
     Route::get('/service-photos/{service}', [ServicePhotoController::class, 'index']);
     Route::get('/service-requests', [ServiceRequestController::class, 'index']);

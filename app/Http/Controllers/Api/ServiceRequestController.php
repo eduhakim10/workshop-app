@@ -40,6 +40,10 @@ class ServiceRequestController extends Controller
     {
         // print_r($request->input());
         // die;
+        $request->merge([
+            'kerusakan' => array_filter($request->kerusakan ?? [], fn($v) => !empty($v))
+        ]);
+        
         $validated = $request->validate([
             // 'sr_number'    => 'required|string|unique:service_requests',
             'customer_id'  => 'required|exists:customers,id',
@@ -111,7 +115,9 @@ class ServiceRequestController extends Controller
         \Log::info('Update ServiceRequest payload', $request->all());
         \Log::info('Update ServiceRequest payload: ' . json_encode($request->all()));
         // die;
-
+        $request->merge([
+            'kerusakan' => array_filter($request->kerusakan ?? [], fn($v) => !empty($v))
+        ]);
         $serviceRequest = ServiceRequest::findOrFail($id);
     
         // 🔹 Validasi (optional, bisa lu sesuaikan)
@@ -153,6 +159,17 @@ class ServiceRequestController extends Controller
                 ]);
             }
         }
+
+        if ($request->has('deleted_photos')) {
+            foreach ($request->deleted_photos as $photoId) {
+                $photo = ServiceRequestPhoto::find($photoId);
+                if ($photo) {
+                    Storage::disk('public')->delete($photo->file_path);
+                    $photo->delete();
+                }
+            }
+        }
+        
     
         return response()->json([
             'success' => true,

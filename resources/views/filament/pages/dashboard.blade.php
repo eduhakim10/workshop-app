@@ -93,6 +93,12 @@
             <h3 class="text-lg font-semibold mb-2">Service Percentage</h3>
             <canvas id="servicePercentageChart" class="max-h-[300px]"></canvas>
         </x-filament::card>
+        <x-filament::card class="h-[400px]">
+            <h3 class="text-lg font-semibold mb-2">Koroseri Percentage</h3>
+            <canvas id="damageChart" class="max-h-[300px]"></canvas>
+        </x-filament::card>
+    
+
     </div>
 
     <!-- Load Chart.js -->
@@ -100,6 +106,50 @@
 
     <!-- JavaScript for Charts -->
     <script>
+         const damageCtx = document.getElementById('damageChart').getContext('2d');
+        new Chart(damageCtx, {
+            type: 'doughnut',
+            data: {
+                labels: @json($this->getDamageByKaroseri('roof')['labels']),
+                datasets: [{
+                    label: 'Kerusakan Roof per Karoseri',
+                    data: @json($this->getDamageByKaroseri('roof')['data']),
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.6)',
+                        'rgba(54, 162, 235, 0.6)',
+                        'rgba(255, 206, 86, 0.6)',
+                        'rgba(75, 192, 192, 0.6)',
+                        'rgba(153, 102, 255, 0.6)'
+                    ],
+                    borderColor: [
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(153, 102, 255, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let total = context.dataset.data.reduce((a,b) => a + b, 0);
+                                let value = context.parsed;
+                                let percentage = ((value / total) * 100).toFixed(1);
+                                return context.label + ': ' + value + ' (' + percentage + '%)';
+                            }
+                        }
+                    }
+                }
+            }
+        });
         const locationRevenueCtx = document.getElementById('locationRevenueChart').getContext('2d');
         new Chart(locationRevenueCtx, {
             type: 'bar',

@@ -7,8 +7,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Service;
 use App\Models\Customer;
 use App\Models\CategoryService; // Import CategoryService model
-
-
+use App\Models\CategoryItem; 
 class Dashboard extends Page
 {
     protected static ?string $navigationIcon = 'heroicon-o-chart-bar';
@@ -237,6 +236,36 @@ class Dashboard extends Page
             'revenue' => $query->sum('total_price'),
             'newCustomers' => $query->distinct('customer_id')->count(),
             'totalServices' => $query->count(),
+        ];
+    }
+    public function getDamageByKaroseri($categoryItemName)
+    {
+        // Ambil category_item_id dari nama kategori kerusakan
+        $categoryItem = CategoryItem::where('name', $categoryItemName)->first();
+        if (!$categoryItem) {
+            return [
+                'labels' => [],
+                'data' => [],
+            ];
+        }
+
+        $query = Service::selectRaw('karoseri, SUM(quantity) as total_damage')
+            ->whereJsonContains('items->category_item_id', $categoryItem->id)
+            ->groupBy('karoseri');
+
+        if ($this->startDate) {
+            $query->whereDate('service_start_date', '>=', $this->startDate);
+        }
+
+        if ($this->endDate) {
+            $query->whereDate('service_start_date', '<=', $this->endDate);
+        }
+
+        $data = $query->get();
+
+        return [
+            'labels' => $data->pluck('karoseri'),
+            'data'   => $data->pluck('total_damage'),
         ];
     }
 
