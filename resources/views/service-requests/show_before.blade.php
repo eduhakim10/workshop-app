@@ -91,8 +91,8 @@
     <table style="width:100%; border-collapse:collapse; border:none;">
       <thead>
         <tr>
-          <th class="text-left" style="width:50%; border:none;">Deskripsi Kerusakan</th>
-          <!-- <th class="text-left" style="width:50%; border:none;">Right Side</th> -->
+          <th class="text-left" style="width:50%; border:none;">Left Side</th>
+          <th class="text-left" style="width:50%; border:none;">Right Side</th>
         </tr>
       </thead>
       <tbody>

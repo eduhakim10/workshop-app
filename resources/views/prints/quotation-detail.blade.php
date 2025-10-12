@@ -115,58 +115,65 @@
         @php 
             $serviceGroup = \App\Models\ServiceGroup::find($group['service_group_id']);
             $groupName = $serviceGroup?->name ?? '-';
-            $groupQty = $group['qty'];
+            $groupTotal = 0;
             $remarks = $service->notes;
         @endphp
+
         <tr>
             <td style="text-align:center;">{{ $no++ }}</td>
-            <td style="text-align: left;">
-                <strong>{{ $groupName }}</strong><br><br>
-                <!-- <strong>REPAIR :</strong><br> -->
-                @foreach($group['items'] as $item)
-               
-                    @php
-                  
-                        $item = \App\Models\Item::find($item['item_id']);
-                    @endphp
-                      {{ $item?->name ?? '-' }} <br>
-                @endforeach
-            </td>
-            <td style="text-align:center; vertical-align:top;">
-              <br>
-              <br>
-                <br>
-            @foreach($group['items'] as $item)
-            {{ $item['quantity'] ?? '-' }} <br>
-        @endforeach
+            <td style="text-align:left;">
+                <strong>{{ strtoupper($groupName) }}</strong><br><br>
 
-            </td>
-            <td style="vertical-align:top;">
-                <br><br><br>
-                @foreach($group['items'] as $item)
-                <div style="display:flex; justify-content:space-between;">
-                  <span style="text-align:left;">Rp</span>
-                  <span style="text-align:right;">{{ number_format($item['sales_price'], 0, ',', '.') }}</span>
-                </div>
-             
+                @foreach($group['items'] as $itemData)
+                    @php
+                        $item = \App\Models\Item::find($itemData['item_id']);
+                        $itemName = $item?->name ?? '-';
+                    @endphp
+                    {{ $itemName }} <br>
                 @endforeach
             </td>
-         
+
+            <td style="text-align:center; vertical-align:top;">
+                <br><br><br>
+                @foreach($group['items'] as $itemData)
+                    {{ $itemData['quantity'] ?? '-' }} <br>
+                @endforeach
+            </td>
+
             <td style="vertical-align:top;">
                 <br><br><br>
-                @foreach($group['items'] as $item)
+                @foreach($group['items'] as $itemData)
+                    <div style="display:flex; justify-content:space-between;">
+                        <span>Rp</span>
+                        <span>{{ number_format($itemData['sales_price'], 0, ',', '.') }}</span>
+                    </div>
+                @endforeach
+            </td>
+
+            <td style="vertical-align:top;">
+                <br><br><br>
+                @foreach($group['items'] as $itemData)
                     @php 
-                        $amount = $item['sales_price'] * $item['quantity'];
+                        $amount = $itemData['sales_price'] * $itemData['quantity'];
+                        $groupTotal += $amount;
                         $subtotal += $amount;
                     @endphp
-                        <div style="display:flex; justify-content:space-between;">
-                          <span style="text-align:left;">Rp</span>
-                          <span style="text-align:right;">{{ number_format($amount, 0, ',', '.') }}</span>
-                        </div>
-                  
+                    <div style="display:flex; justify-content:space-between;">
+                        <span>Rp</span>
+                        <span>{{ number_format($amount, 0, ',', '.') }}</span>
+                    </div>
                 @endforeach
+                <hr style="margin: 0px 0;">
+                <div style="display:flex; justify-content:space-between;font-weight:bold;">
+                        <span>Rp</span>
+                        <span>{{ number_format($groupTotal, 0, ',', '.') }}</span>
+                    </div>
+                <!-- TOTAL PER GROUP -->
+               
+             
             </td>
-            <td>{{ $remarks }}</td>
+
+            <td style="vertical-align:top;">{{ $remarks }}</td>
         </tr>
     @endforeach
 
@@ -174,38 +181,36 @@
     <tr>
       <td colspan="4" style="text-align:right;"><strong>Sub Total</strong></td>
       <td>
-       
-              <div style="display:flex; justify-content:space-between;">
-                <span style="text-align:left;">Rp</span>
-                <span style="text-align:right;">{{ number_format($subtotal, 0, ',', '.') }}</span>
-              </div>
-      
+        <div style="display:flex; justify-content:space-between;">
+          <span>Rp</span>
+          <span>{{ number_format($subtotal, 0, ',', '.') }}</span>
+        </div>
       </td>
       <td></td>
     </tr>
     <tr>
       <td colspan="4" style="text-align:right;"><strong>PPN 11%</strong></td>
       <td>
-            <div style="display:flex; justify-content:space-between;">
-                <span style="text-align:left;">Rp</span>
-                <span style="text-align:right;">{{ number_format($subtotal * 0.11, 0, ',', '.') }}</span>
-              </div>
-
+        <div style="display:flex; justify-content:space-between;">
+          <span>Rp</span>
+          <span>{{ number_format($subtotal * 0.11, 0, ',', '.') }}</span>
+        </div>
       </td>
       <td></td>
     </tr>
     <tr>
       <td colspan="4" style="text-align:right;"><strong>Total</strong></td>
       <td>
-              <div style="display:flex; justify-content:space-between;">
-                <span style="text-align:left;">Rp</span>
-                <span style="text-align:right;"><strong> {{ number_format($subtotal * 1.11, 0, ',', '.') }}</strong></span>
-              </div>
+        <div style="display:flex; justify-content:space-between;">
+          <span>Rp</span>
+          <strong>{{ number_format($subtotal * 1.11, 0, ',', '.') }}</strong>
+        </div>
       </td>
       <td></td>
     </tr>
   </tbody>
 </table>
+
    
 
    <!-- Terms & Conditions -->

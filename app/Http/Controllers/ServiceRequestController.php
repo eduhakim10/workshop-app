@@ -15,12 +15,29 @@ class ServiceRequestController extends Controller
         $serviceRequest = ServiceRequest::with([
             'customer',
             'vehicle',
-            'damages',      // relasi ke services_request_damages
+            'damages' => function($query) {
+                $query->where('type', 'before'); // filter type=after
+            },      // relasi ke services_request_damages
             'photos',       // relasi ke service_request_photos
         ])->findOrFail($id);
         // echo '<pre>';
         // print_r(compact('serviceRequest'));
         // die;
         return view('service-requests.show', compact('serviceRequest'));
+    }
+    public function after($id)
+    {
+        $serviceRequest = ServiceRequest::with([
+            'customer',
+            'vehicle',
+            'damages',      // relasi ke services_request_damages
+            'photos' => function($query) {
+                $query->where('type', 'after'); // filter type=after
+            },
+        ])->findOrFail($id);
+        // echo '<pre>';
+        // print_r(compact('serviceRequest'));
+        // die;
+        return view('service-requests.show_after', compact('serviceRequest'));
     }
 }

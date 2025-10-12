@@ -145,6 +145,15 @@ class QuotationsResource extends Resource
                             } else {
                                 $set('vehicle_id', null);
                             }
+
+                            if ($sr?->notes) {
+                                $set('notes_before', $sr?->notes);
+                            } else {
+                                $set('notes_before', null);
+
+                            }
+
+                          
                         } else {
                             $set('customer_id', null);
                             $set('vehicle_id', null);
@@ -168,7 +177,7 @@ class QuotationsResource extends Resource
             ->relationship('customer', 'name')
             ->searchable()
             ->disabled() 
-            ->dehydrated() // <-- ini kunci nya bro
+            ->dehydrated() 
             ->required(),
 
             Select::make('vehicle_id')
@@ -176,6 +185,7 @@ class QuotationsResource extends Resource
             ->relationship('vehicle', 'license_plate')
             ->searchable()
             ->disabled()
+            ->dehydrated()
             ->required(),
         
         
@@ -238,8 +248,21 @@ class QuotationsResource extends Resource
                 ])
                 ->required(),
             Textarea::make('notes'),
+            Textarea::make('notes_before')
+    ->label('Notes Before')
+    ->default(function (callable $get) {
+        $srId = $get('service_request_id'); // ambil ID service request yang dipilih
+        if ($srId) {
+            $sr = \App\Models\ServiceRequest::find($srId);
+            return $sr?->notes; // ambil field notes
+        }
+        return null;
+    })
+    ->disabled() // readonly
+    ->columnSpanFull(),
 
-          
+
+    
     Repeater::make('items_offer')
     ->label('Service Groups')
     ->schema([
