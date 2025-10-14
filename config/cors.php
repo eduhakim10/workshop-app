@@ -22,6 +22,7 @@ return [
     'allowed_origins' => [
         'http://localhost:3000',
         'http://workshop-app.test', // Opsional, jika kamu ingin mengizinkan dari domain yang sama
+        'https://mobile.mtikarawang.com'
     ],
 
     'allowed_origins_patterns' => [],
