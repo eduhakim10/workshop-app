@@ -18,6 +18,7 @@ class ServiceRequest extends Model
         'kerusakan',
         'created_by',
         'vehicle_id',
+        'inspection_date',
         'notes'
 
         // tambahin field lain sesuai migration

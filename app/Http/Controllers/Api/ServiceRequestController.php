@@ -47,6 +47,7 @@ class ServiceRequestController extends Controller
         $validated = $request->validate([
             // 'sr_number'    => 'required|string|unique:service_requests',
             'customer_id'  => 'required|exists:customers,id',
+            'inspection_date' => 'nullable|date',
             'kerusakan'    => 'nullable|array',
             'kerusakan.*'  => 'exists:damages,id', // pastikan damage_id valid
             'vehicle_id' => 'required|exists:vehicles,id',
@@ -58,6 +59,8 @@ class ServiceRequestController extends Controller
             'kerusakan'   => isset($validated['kerusakan'])
                     ? implode(', ', $validated['kerusakan'])
                     : null,
+            'inspection_date' => $validated['inspection_date'] ?? now(), // ✅ default today kalau gak dikirim
+
             'created_by' => auth()->id(), // isi otomatis user login
         ]));
          

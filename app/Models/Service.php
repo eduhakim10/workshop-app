@@ -21,7 +21,7 @@ class Service extends Model
         'work_order_date',
         'invoice_number',
         'invoice_handover_date',
-        'assign_to',
+        'assign_to', 
         'service_start_date',
         'service_due_date',
         'service_start_time',
@@ -42,6 +42,7 @@ class Service extends Model
          'updated_at_offer',
           'sr_number',
         'service_request_id',
+        'service_check_date'
     ];
     protected $casts = [
         'items' => 'array',

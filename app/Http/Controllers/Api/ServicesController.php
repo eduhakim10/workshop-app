@@ -54,6 +54,7 @@ class ServicesController extends Controller
             $service = Service::findOrFail($id);
 
             // 1️⃣ Update notes_after
+            $service->service_check_date = $request->service_check_date;
             $service->notes_after = $request->after_notes;
             $service->save();
 
