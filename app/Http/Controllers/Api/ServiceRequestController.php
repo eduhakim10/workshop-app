@@ -127,6 +127,7 @@ class ServiceRequestController extends Controller
         $validated = $request->validate([
             'jenis' => 'nullable|string',
             'customer_id' => 'required|exists:customers,id',
+            'inspection_date' => 'nullable|date',
             'vehicle_id' => 'required|exists:vehicles,id',
             'kerusakan' => 'array',
             'kerusakan.*' => 'exists:damages,id',
@@ -137,6 +138,7 @@ class ServiceRequestController extends Controller
         // 🔹 Update field basic
         $serviceRequest->customer_id = $request->customer_id;
         $serviceRequest->vehicle_id = $request->vehicle_id;
+        $serviceRequest->inspection_date = $request->inspection_date;
         $serviceRequest->notes = $request->notes ?? null;
     
         // 🔹 Mapping jenis ke status / flag lain (optional)
