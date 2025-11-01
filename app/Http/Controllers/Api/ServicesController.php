@@ -47,7 +47,7 @@ class ServicesController extends Controller
         ]);
         // Validasi input
         $request->validate([
-            'after_notes' => 'nullable|string',
+            'notes_after' => 'nullable|string',
             'after_photos.*' => 'nullable|image|max:5120', // max 5MB per file
             'after_damages' => 'nullable|array',
             'after_damages.*.damage_id' => 'required|integer|exists:damages,id',
@@ -59,7 +59,7 @@ class ServicesController extends Controller
 
             // 1️⃣ Update notes_after
             $service->service_check_date = $request->service_check_date;
-            $service->notes_after = $request->after_notes;
+            $service->notes_after = $request->notes_after;
             $service->save();
 
             // 2️⃣ Upload foto after & insert ke service_request_photos
