@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\ServiceRequestPhoto;
 use App\Models\ServicesRequestDamage;
+use Illuminate\Support\Facades\Log;
+
 
 class ServicesController extends Controller
 {
@@ -39,8 +41,10 @@ class ServicesController extends Controller
     // }
     public function updateAfter(Request $request, $id)
     {
-        // print_r($request->input());
-        // die;
+        Log::info('[updateAfter] Incoming Request:', [
+            'id' => $id,
+            'payload' => $request->all(),
+        ]);
         // Validasi input
         $request->validate([
             'after_notes' => 'nullable|string',
