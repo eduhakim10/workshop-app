@@ -114,7 +114,8 @@ class ServicesController extends Controller
             'beforePhotos',
             'beforedamages.damage',
             'afterdamages.damage',
-            'assignTo'
+            'assignTo',
+            'serviceRequest'
         ])->findOrFail($id);
         
 

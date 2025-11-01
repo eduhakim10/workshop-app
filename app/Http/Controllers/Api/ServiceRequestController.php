@@ -66,7 +66,11 @@ class ServiceRequestController extends Controller
          
         if ($request->has('kerusakan')) {
             foreach ($request->kerusakan as $damageId) {
-                $serviceRequest->damages()->attach($damageId);
+                $serviceRequest->damages()->attach($damageId, [
+                    'type' => 'before',
+                    // 'created_at' => now(),
+                    // 'updated_at' => now(),
+                ]);
         }
     }
         // handle photos

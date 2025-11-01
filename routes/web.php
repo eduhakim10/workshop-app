@@ -10,8 +10,6 @@ Route::get('/', function () {
 });
 Route::get('/quotation/{service}/print-overview', [QuotationPrintController::class, 'overview'])->name('quotation.print.overview');
 Route::get('/quotation/{service}/print-detail', [QuotationPrintController::class, 'detail'])->name('quotation.print.detail');
-Route::get('/service-requests/{id}', [ServiceRequestController::class, 'show'])
+Route::get('/service-requests/{id}', [ServiceRequestController::class, 'show'])->name('service-requests.show');
 
-    ->name('service-requests.show');
-
-    Route::get('/service-requests/{id}/after', [ServiceRequestController::class, 'after']);
+    Route::get('/service-requests/{id}/after', [ServiceRequestController::class, 'service-requests.after']);
