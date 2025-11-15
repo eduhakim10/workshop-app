@@ -40,6 +40,7 @@
                 @endforeach
             </select>
         </div>
+      
 
 
         <!-- Button: Ensure it stays visible -->
@@ -62,7 +63,7 @@
         </x-filament::card>
 
         <x-filament::card>
-            <h3 class="text-lg font-semibold">Total New Customers</h3>
+            <h3 class="text-lg font-semibold">Total Customers</h3>
             <p class="text-2xl font-bold">{{ $this->getStats()['newCustomers'] }}</p>
         </x-filament::card>
 
@@ -93,6 +94,12 @@
             <h3 class="text-lg font-semibold mb-2">Service Percentage</h3>
             <canvas id="servicePercentageChart" class="max-h-[300px]"></canvas>
         </x-filament::card>
+        <x-filament::card class="h-[400px]">
+            <h3 class="text-lg font-semibold mb-2">Karoseri Percentage</h3>
+            <canvas id="damageChart" class="max-h-[300px]"></canvas>
+        </x-filament::card>
+    
+
     </div>
 
     <!-- Load Chart.js -->
@@ -100,6 +107,50 @@
 
     <!-- JavaScript for Charts -->
     <script>
+         const damageCtx = document.getElementById('damageChart').getContext('2d');
+        new Chart(damageCtx, {
+            type: 'doughnut',
+            data: {
+                labels: @json($this->getDamageByKaroseri('roof')['labels']),
+                datasets: [{
+                    label: 'Kerusakan Roof per Karoseri',
+                    data: @json($this->getDamageByKaroseri('roof')['data']),
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.6)',
+                        'rgba(54, 162, 235, 0.6)',
+                        'rgba(255, 206, 86, 0.6)',
+                        'rgba(75, 192, 192, 0.6)',
+                        'rgba(153, 102, 255, 0.6)'
+                    ],
+                    borderColor: [
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(153, 102, 255, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let total = context.dataset.data.reduce((a,b) => a + b, 0);
+                                let value = context.parsed;
+                                let percentage = ((value / total) * 100).toFixed(1);
+                                return context.label + ': ' + value + ' (' + percentage + '%)';
+                            }
+                        }
+                    }
+                }
+            }
+        });
         const locationRevenueCtx = document.getElementById('locationRevenueChart').getContext('2d');
         new Chart(locationRevenueCtx, {
             type: 'bar',
@@ -127,22 +178,44 @@
             type: 'bar',
             data: {
                 labels: @json($this->getCustomerRevenueData()['labels']),
-                datasets: [{
-                    label: 'Revenue by Customer',
-                    data: @json($this->getCustomerRevenueData()['data']),
-                    backgroundColor: 'rgba(255, 159, 64, 0.5)',
-                    borderColor: 'rgba(255, 159, 64, 1)',
-                    borderWidth: 1,
-                }]
+                datasets: [
+                    {
+                        label: 'Revenue by Customer',
+                        data: @json($this->getCustomerRevenueData()['revenue']),
+                        backgroundColor: 'rgba(255, 159, 64, 0.5)',
+                        borderColor: 'rgba(255, 159, 64, 1)',
+                        borderWidth: 1,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'Total Services',
+                        data: @json($this->getCustomerRevenueData()['services']),
+                        backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1,
+                        yAxisID: 'y1'
+                    }
+                ]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 scales: {
-                    y: { beginAtZero: true }
+                    y: {
+                        beginAtZero: true,
+                        position: 'left',
+                        title: { display: true, text: 'Revenue' }
+                    },
+                    y1: {
+                        beginAtZero: true,
+                        position: 'right',
+                        grid: { drawOnChartArea: false }, // biar nggak numpuk garis
+                        title: { display: true, text: 'Total Services' }
+                    }
                 }
             }
         });
+
 
         const serviceQuantityCtx = document.getElementById('serviceQuantityChart').getContext('2d');
         new Chart(serviceQuantityCtx, {

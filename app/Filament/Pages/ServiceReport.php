@@ -2,29 +2,19 @@
 namespace App\Filament\Pages;
 
 use App\Exports\ServicesExport;
+use App\Exports\ItemsExport;
 use Filament\Forms;
 use Filament\Pages\Page;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\Date;
 use Maatwebsite\Excel\Facades\Excel;
-use Filament\Actions\Action;
-use App\Models\Service;
-use App\Models\Customer;
-use App\Models\Location;
-use App\Models\Vehicle;
-use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Filters\SelectFilter;
-use Filament\Tables\Filters\DateFilter;
-
 
 class ServiceReport extends Page
 {
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
     protected static ?string $navigationLabel = 'Service Report';
     protected static ?string $slug = 'service-report';
-
     protected static string $view = 'filament.pages.service-report';
 
+    public $seino_no;
     public $customer_id;
     public $location_id;
     public $vehicle_id;
@@ -33,46 +23,51 @@ class ServiceReport extends Page
     public $end_date;
 
     /**
-     * Define the form schema for the export filter.
+     * Form untuk filter export.
      */
     protected function getFormSchema(): array
     {
         return [
+            Forms\Components\Select::make('seino_no')
+                ->label('Seino / Non Seino')
+                ->options([
+                    'Seino' => 'Seino',
+                    'Non Seino' => 'Non Seino',
+                ])
+                ->placeholder('All'),
 
             Forms\Components\Select::make('location_id')
-            ->label('Location')
-            ->options(\App\Models\Location::pluck('name', 'id'))
-            ->searchable()
-            ->reactive(),
+                ->label('Location')
+                ->options(\App\Models\Location::pluck('name', 'id'))
+                ->searchable()
+                ->reactive(),
 
             Forms\Components\Select::make('customer_id')
-            ->label('Customer')
-            ->options(\App\Models\Customer::pluck('name', 'id'))
-            ->searchable()
-            ->reactive()
-            ->afterStateUpdated(function (callable $set) {
-                $set('vehicle', null); // Clear vehicle field when customer changes
-            }),
+                ->label('Customer')
+                ->options(\App\Models\Customer::pluck('name', 'id'))
+                ->searchable()
+                ->reactive()
+                ->afterStateUpdated(function (callable $set) {
+                    $set('vehicle', null);
+                }),
 
             Forms\Components\Select::make('vehicle_id')
-            ->label('Vehicle')
-            ->placeholder('Search by license plate or customer name')
-            ->searchable()
-            ->getSearchResultsUsing(function (string $search) {
-                return \App\Models\Vehicle::with('customer') // Ensure customer relationship is loaded
-                    ->where('license_plate', 'like', "%{$search}%")
-                    ->orWhereHas('customer', function ($query) use ($search) {
-                        $query->where('name', 'like', "%{$search}%");
-                    })
-                    ->limit(50)
-                    ->get()
-                    ->mapWithKeys(function ($vehicle) {
-                        return [
+                ->label('Vehicle')
+                ->placeholder('Search by license plate or customer name')
+                ->searchable()
+                ->getSearchResultsUsing(function (string $search) {
+                    return \App\Models\Vehicle::with('customer')
+                        ->where('license_plate', 'like', "%{$search}%")
+                        ->orWhereHas('customer', function ($query) use ($search) {
+                            $query->where('name', 'like', "%{$search}%");
+                        })
+                        ->limit(50)
+                        ->get()
+                        ->mapWithKeys(fn($vehicle) => [
                             $vehicle->id => "{$vehicle->license_plate} - {$vehicle->customer->name}",
-                        ];
-                    });
-            })
-            ->getOptionLabelUsing(fn ($value): ?string => \App\Models\Vehicle::with('customer')->find($value)?->license_plate),
+                        ]);
+                })
+                ->getOptionLabelUsing(fn ($value): ?string => \App\Models\Vehicle::with('customer')->find($value)?->license_plate),
 
             Forms\Components\Select::make('status')
                 ->label('Status')
@@ -95,7 +90,7 @@ class ServiceReport extends Page
     }
 
     /**
-     * Handle the export action.
+     * Handle Export Services.
      */
     public function export()
     {
@@ -107,21 +102,55 @@ class ServiceReport extends Page
             'start_date' => $this->start_date,
             'end_date' => $this->end_date,
         ];
-       // dd($filters);
+
         return Excel::download(new ServicesExport($filters), 'service_report.xlsx');
     }
+
+    /**
+     * Handle Export Items.
+     */
+    public function exportItems()
+    {
+        $filters = [
+            'seino_no' => $this->seino_no,
+            'customer_id' => $this->customer_id,
+            'location_id' => $this->location_id,
+            'vehicle_id' => $this->vehicle_id,
+            'status' => $this->status,
+            'start_date' => $this->start_date,
+            'end_date' => $this->end_date,
+        ];
+
+        return Excel::download(new ItemsExport($filters), 'items_report.xlsx');
+    }
+
     public function mount(): void
     {
         $this->form->fill();
     }
-    // public function render(): \Illuminate\Contracts\View\View
-    // {
-    //     return view(static::$view, [
-    //         'form' => $this->form,
-    //     ]);
-    // }
+
     public static function canViewAny(): bool
     {
         return auth()->user()->can('view reports');
+    }
+
+    /**
+     * Tambahkan tombol export di Filament view.
+     */
+    protected function getActions(): array
+    {
+        return [
+            \Filament\Actions\Action::make('exportServices')
+                ->label('Export Services')
+                ->button()
+                ->color('success')
+                ->action(fn() => $this->export()),
+
+            \Filament\Actions\Action::make('exportItems')
+                ->label('Export Items')
+                ->button()
+                ->color('info')
+                ->action(fn() => $this->exportItems()),
+        ];
     }
 }

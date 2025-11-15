@@ -21,19 +21,34 @@ class Service extends Model
         'work_order_date',
         'invoice_number',
         'invoice_handover_date',
-        'assign_to',
+        'assign_to', 
         'service_start_date',
         'service_due_date',
         'service_start_time',
         'service_due_time',
-
         'status',
         'notes',
         'items', 
+        'items_offer', 
+        'stage',
+        'payment_terms',
+        'validity_terms',
+        'delivery_terms',
+        'prepared_by',
+        'quotation_status',
+         'spk_number',
+         'po_number',
+         'created_at_offer',
+         'updated_at_offer',
+          'sr_number',
+        'service_request_id',
+        'service_check_date'
     ];
     protected $casts = [
         'items' => 'array',
+        'items_offer' => 'array',
         'customer_id' => 'integer',
+        'kerusakan_after' => 'array',
 
     ];
     
@@ -50,6 +65,10 @@ class Service extends Model
     public function employee()
     {
         return $this->belongsTo(Employee::class, 'assign_to');
+    }
+   public function preparedBy()
+    {
+        return $this->belongsTo(Employee::class, 'prepared_by');
     }
 
     public function items()
@@ -68,5 +87,70 @@ class Service extends Model
     {
         return $this->belongsTo(Employee::class, 'assign_to', 'id');
     }
+    // public function photos()
+    // {
+    //     return $this->hasMany(ServicePhoto::class);
+    // }
+    public function serviceRequest()
+    {
+        // pastiin foreign key bener
+        return $this->belongsTo(ServiceRequest::class, 'service_request_id', 'id');
+    }
+
+    public function photosAfter()
+    {
+        return $this->hasMany(ServiceRequestPhoto::class, 'service_request_id', 'service_request_id')
+                    ->where('type', 'after');
+    }
+    public function beforePhotos()
+    {
+        return $this->hasMany(\App\Models\ServiceRequestPhoto::class, 'service_request_id', 'service_request_id')
+            ->where('type', 'before');
+    }
+
+    public function afterPhotos()
+    {
+        return $this->hasMany(\App\Models\ServiceRequestPhoto::class, 'service_request_id', 'service_request_id')
+            ->where('type', 'after');
+    }
+
+        public function photos()
+    {
+        return $this->hasMany(ServiceRequestPhoto::class, 'service_request_id', 'service_request_id');
+    }
+    public function damages()
+    {
+        return $this->hasMany(ServicesRequestDamage::class, 'service_request_id', 'service_request_id');
+    }
+    public function beforedamages()
+    {
+        return $this->hasMany(ServicesRequestDamage::class, 'service_request_id', 'service_request_id') ->where('type', 'before')->with('damage');;
+    }
+    public function afterdamages()
+    {
+        return $this->hasMany(ServicesRequestDamage::class, 'service_request_id', 'service_request_id') ->where('type', 'after')->with('damage');;;
+    }
+    
+    
+    
+    protected static function booted()
+    {
+        static::creating(function ($service) {
+            if ($service->service_request_id) {
+                $sr = \App\Models\ServiceRequest::find($service->service_request_id);
+                $service->sr_number = $sr?->sr_number;
+            }
+        });
+
+        static::updating(function ($service) {
+            if ($service->service_request_id) {
+                $sr = \App\Models\ServiceRequest::find($service->service_request_id);
+                $service->sr_number = $sr?->sr_number;
+            }
+        });
+    }
+
+
+
 
 }

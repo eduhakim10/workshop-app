@@ -7,8 +7,8 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Service;
 use App\Models\Customer;
 use App\Models\CategoryService; // Import CategoryService model
-
-
+use App\Models\CategoryItem; 
+use Illuminate\Support\Facades\Log;
 class Dashboard extends Page
 {
     protected static ?string $navigationIcon = 'heroicon-o-chart-bar';
@@ -23,15 +23,18 @@ class Dashboard extends Page
 
     public function mount()
     {
+        // dd($_SERVER);
         // Set default date range (e.g., last 30 days)
         $this->startDate = request()->query('startDate', now()->subDays(30)->format('Y-m-d'));
         $this->endDate = request()->query('endDate', now()->addDays(30)->format('Y-m-d'));
         $this->status = request()->query('status', null);
         $this->categoryServiceId = request()->query('categoryServiceId', null); // Capture category_service_id
+        $this->categoryDamages = request()->query('categoryDamageId', 1); // Capture category_service_id
+
 
     
     }
-
+ 
     public function getStats()
     {
         
@@ -54,9 +57,21 @@ class Dashboard extends Page
         if ($this->categoryServiceId) {
             $query->where('category_service_id', $this->categoryServiceId);
         }
-
+        $query->where('stage', '=', 2);
         $revenue = $query->sum('amount_offer_revision');
-        $newCustomers = Customer::whereBetween('created_at', [$this->startDate, $this->endDate])->count();
+      //  $newCustomers = Customer::whereBetween('created_at', [$this->startDate, $this->endDate])->count();
+      $newCustomers = Customer::whereHas('services', function ($q) {
+                if ($this->startDate) {
+                    $q->whereDate('service_start_date', '>=', $this->startDate);
+                }
+                if ($this->endDate) {
+                    $q->whereDate('service_start_date', '<=', $this->endDate);
+                }
+                $q->whereNotNull('amount_offer_revision'); // pastikan ada revenue
+                $q->where('amount_offer_revision', '>', 0); // kalau mau revenue > 0
+            })
+            ->whereBetween('created_at', [$this->startDate, $this->endDate])
+            ->count();
         $totalServices = $query->count();
 
         // Return data for the dashboard
@@ -81,17 +96,36 @@ class Dashboard extends Page
     }
     public function getCustomerRevenueData()
     {
-    //    dd($this->startDate);
-        $data = Service::selectRaw('customers.name as customer, SUM(amount_offer_revision) as total_revenue')
+        $query = Service::selectRaw('customers.name as customer, SUM(amount_offer_revision) as total_revenue, COUNT(services.id) as total_services')
             ->join('customers', 'services.customer_id', '=', 'customers.id')
-            ->groupBy('customers.name')
-            ->get();
+            ->groupBy('customers.name');
+
+        if ($this->startDate) {
+            $query->whereDate('service_start_date', '>=', $this->startDate);
+        }
+
+        if ($this->endDate) {
+            $query->whereDate('service_start_date', '<=', $this->endDate);
+        }
+
+        if ($this->status) {
+            $query->where('status', $this->status);
+        }
+
+        if ($this->categoryServiceId) {
+            $query->where('category_service_id', $this->categoryServiceId);
+        }
+
+        $data = $query->get();
 
         return [
-            'labels' => $data->pluck('customer'),
-            'data' => $data->pluck('total_revenue'),
+            'labels'   => $data->pluck('customer'),
+            'revenue'  => $data->pluck('total_revenue'),
+            'services' => $data->pluck('total_services'),
         ];
-    }
+}
+
+
     public function getServiceQuantityData()
     {
         $data = Service::selectRaw('locations.name as location, COUNT(services.id) as total_services')
@@ -207,11 +241,67 @@ class Dashboard extends Page
             'totalServices' => $query->count(),
         ];
     }
+    public function getDamageByKaroseri($categoryItemid)
+{
+//$categoryItemName='AORI';
+  //  Log::info("=== getDamageByKaroseri start ===", ['category' => $categoryItemName]);
+    if ($this->categoryDamages) {
+        $categoryItemid=$this->categoryDamages;
+    }
+    // Ambil category_item_id dari nama kategori kerusakan
+    $categoryItem = CategoryItem::where('id', $categoryItemid)->first();
+
+    if (!$categoryItem) {
+        return [
+            'labels' => [],
+            'data' => [],
+        ];
+    }
+    Log::info("Category found", ['id' => $categoryItem->id, 'name' => $categoryItem->name]);
+    // Ambil semua service + join vehicle
+    $services = Service::join('vehicles', 'services.vehicle_id', '=', 'vehicles.id')
+        ->select('vehicles.karoseri', 'services.items')
+        ->get();
+    Log::info("Total services fetched", ['count' => $services->count()]);
+
+    $result = [];
+
+    foreach ($services as $service) {
+        $items = $service->items; // langsung array, gak perlu decode
+
+        if (!is_array($items)) continue;
+
+        foreach ($items as $item) {
+            if (
+                isset($item['category_item_id']) &&
+                (string)$item['category_item_id'] === (string)$categoryItem->id
+            ) {
+                $result[$service->karoseri] = ($result[$service->karoseri] ?? 0)
+                    + ((int)($item['quantity'] ?? 1));
+            }
+        }
+    }
+
+    // Siapin data chart
+    $labels = array_keys($result);
+    $data   = array_values($result);
+    Log::info("Result akhir", ['data' => $result]);
+
+    return [
+        'labels' => $labels,
+        'data'   => $data,
+    ];
+}
+
 
 
     public function getCategoryServices()
     {
         return CategoryService::pluck('name', 'id'); // Get categories as [id => name]
+    }
+    public function getCategoryItems()
+    {
+        return CategoryItem::pluck('name', 'id'); // Get categories as [id => name]
     }
     public static function canViewAny(): bool
     {

@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Forms\Components\Repeater;
 use App\Models\CategoryService;
+use Filament\Forms\Components\Placeholder;
 
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Password;
@@ -68,14 +69,49 @@ class ServiceResource extends Resource
                 ->options(CategoryService::pluck('name', 'id')->toArray())
                 ->required()
                 ->searchable(),
+        //    TextInput::make('offer_number')
+        //     ->label('Offer Number')
+        //     ->required()
+        //     ->disabled()
+        //     ->rule(function (callable $get) {
+        //         return function (string $attribute, $value, Closure $fail) use ($get) {
+        //             $vehicleId = $get('vehicle_id');
+
+        //             if (!$vehicleId) {
+        //                 return; // skip validation kalau vehicle belum dipilih
+        //             }
+
+        //             $exists = \App\Models\Service::where('offer_number', $value)
+        //                 ->where('vehicle_id', $vehicleId)
+        //                 ->exists();
+
+        //             if ($exists) {
+        //                 $fail("Kombinasi Offer Number dan Plat Nomor sudah digunakan.");
+        //             }
+        //         };
+        //     }),
             TextInput::make('offer_number')->required(),
+
+            // TextInput::make('spk_number')->required(),
+            TextInput::make('po_number')->required(),
             TextInput::make('amount_offer')->numeric()->required(),
             TextInput::make('amount_offer_revision')->numeric(),
             DatePicker::make('handover_offer_date'),
             TextInput::make('work_order_number'),
             DatePicker::make('work_order_date'),
+            
             TextInput::make('invoice_number'),
             DatePicker::make('invoice_handover_date'),
+              DatePicker::make('invoice_payment_date'),
+            Select::make('document_position')
+            ->options([
+                'pcs' => 'Karawang',
+                'kg' => 'Balaraja',
+                'liters' => 'Cikampek',
+                'Lembar' => 'Karawang Barat',
+                'Meter' => 'MT Haryono',
+            ])
+            ->required(),
             Select::make('assign_to')
                 ->label('Assign to')
                 ->relationship('employee', 'name')
@@ -152,13 +188,38 @@ class ServiceResource extends Resource
             ->defaultItems(1)
             ->columnSpan('full')
             ->required(),
+
+    Placeholder::make('total_items_price')
+        ->label('Total Price')
+        ->content(function (callable $get) {
+            $items = $get('items') ?? [];
+            $total = 0;
+
+            foreach ($items as $item) {
+                $price = isset($item['sales_price']) ? floatval($item['sales_price']) : 0;
+                $qty = isset($item['quantity']) ? floatval($item['quantity']) : 0;
+                $total += $price * $qty;
+            }
+
+            return 'Rp ' . number_format($total, 0, ',', '.');
+        })
+        ->columnSpanFull(),
         ]);
+
+        
+
+
+
+        
     }
 
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
+                TextColumn::make('offer_number')->label('Offer Number')->searchable(),
+                TextColumn::make('work_order_number')->label('Work Order Number')->searchable(),
+                TextColumn::make('amount_offer_revision')->label('Amount')->searchable(),
                 TextColumn::make('customer.name')->label('Customer')->searchable(),
                 TextColumn::make('vehicle.license_plate')->label('License Plate')->searchable(),
                 TextColumn::make('location.name')->label('Location'), // New column for Location
@@ -198,6 +259,30 @@ class ServiceResource extends Resource
                             ->label('License Plate')
                             ->placeholder('Enter License Plate'),
                     ]),
+                 Filter::make('offer_number')
+                    ->label('Offer Number')
+                    ->query(function (Builder $query, $data) {
+                        if (!empty($data['offer_number'])) {
+                            $query->where('offer_number', 'like', '%' . $data['offer_number'] . '%');
+                        }
+                    })
+                    ->form([
+                        TextInput::make('offer_number')
+                            ->label('Offer Number')
+                            ->placeholder('Enter Offer Number'),
+                ]),
+                  Filter::make('work_order_number')
+                    ->label('Work Order Number')
+                    ->query(function (Builder $query, $data) {
+                        if (!empty($data['work_order_number'])) {
+                            $query->where('work_order_number', 'like', '%' . $data['work_order_number'] . '%');
+                        }
+                    })
+                    ->form([
+                        TextInput::make('work_order_number')
+                            ->label('SPK Number')
+                            ->placeholder('Enter SPK Number'),
+                ]),
                 SelectFilter::make('customer_id')
                     ->label('Customer')
                     ->options(Customer::pluck('name', 'id')->toArray()),
@@ -206,7 +291,12 @@ class ServiceResource extends Resource
                 Tables\Actions\EditAction::make(),
             ]);
     }
-    
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->where('stage', 2)
+             ->orderBy('created_at', 'desc');
+    }
 
     public static function getRelations(): array
     {
