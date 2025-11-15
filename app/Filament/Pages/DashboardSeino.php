@@ -6,6 +6,7 @@ use Filament\Pages\Page;
 use App\Models\Service;
 use App\Models\Customer;
 use App\Models\CategoryService; 
+use App\Models\CategoryItem; 
 class DashboardSeino extends Page
 {
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
@@ -200,7 +201,10 @@ class DashboardSeino extends Page
         ];
     }
 
-
+    public function getCategoryItems()
+    {
+        return CategoryItem::pluck('name', 'id'); // Get categories as [id => name]
+    }
     public function getCategoryServices()
     {
         return CategoryService::pluck('name', 'id'); // Get categories as [id => name]

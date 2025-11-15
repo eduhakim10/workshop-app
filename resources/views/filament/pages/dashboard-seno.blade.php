@@ -30,11 +30,11 @@
         </div>
 
         <div class="flex flex-col">
-        <label for="category_services_id" class="block text-sm font-medium text-gray-700">Category Services</label>
-            <select id="category_services_id" name="categoryServiceId" class="p-2 border rounded w-full">
-                <option value="">All Categories</option>
-                @foreach ($this->getCategoryServices() as $id => $name)
-                    <option value="{{ $id }}" {{ request('categoryServiceId') == $id ? 'selected' : '' }}>
+        <label for="category_services_id" class="block text-sm font-medium text-gray-700">Category Damages</label>
+            <select id="category_services_id" name="categoryDamageId" class="p-2 border rounded w-full">
+                <!-- <option value="">All D</option> -->
+                @foreach ($this->getCategoryItems() as $id => $name)
+                    <option value="{{ $id }}" {{ request('categoryDamageId') == $id ? 'selected' : '' }}>
                         {{ $name }}
                     </option>
                 @endforeach
@@ -66,22 +66,18 @@
 
 
     <!-- Stats Overview -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+
         <x-filament::card>
             <h3 class="text-lg font-semibold">Total Revenue</h3>
             <p class="text-2xl font-bold">{{ number_format($this->getStats()['revenue'], 2) }}</p>
         </x-filament::card>
-
-        <x-filament::card>
-            <!-- <h3 class="text-lg font-semibold">Total Quotation</h3>
-            <p class="text-2xl font-bold">0</p> -->
-        </x-filament::card>
-
         <x-filament::card>
             <h3 class="text-lg font-semibold">Total Services</h3>
             <p class="text-2xl font-bold">{{ $this->getStats()['totalServices'] }}</p>
         </x-filament::card>
     </div>
+   
 
     <!-- Charts Section -->
     <div class="grid grid-cols-1 md:grid-cols-6 gap-6">
