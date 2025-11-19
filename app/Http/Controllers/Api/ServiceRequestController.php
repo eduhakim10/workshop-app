@@ -17,11 +17,11 @@ class ServiceRequestController extends Controller
 {
     /**
      * Display a listing of the resource.
-     */
+     */ 
   public function index()
     {
         return response()->json(
-            ServiceRequest::with('photos', 'customer')->latest()->get()
+            ServiceRequest::with('photos', 'customer','vehicle')->latest()->get()
         );
     }
 
