@@ -32,7 +32,7 @@
         <div class="flex flex-col">
         <label for="category_services_id" class="block text-sm font-medium text-gray-700">Category Damages</label>
             <select id="category_services_id" name="categoryDamageId" class="p-2 border rounded w-full">
-                <!-- <option value="">All D</option> -->
+            <option value="">All</option>
                 @foreach ($this->getCategoryItems() as $id => $name)
                     <option value="{{ $id }}" {{ request('categoryDamageId') == $id ? 'selected' : '' }}>
                         {{ $name }}

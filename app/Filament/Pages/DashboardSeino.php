@@ -16,8 +16,8 @@ class DashboardSeino extends Page
     public $startDate;
     public $endDate;
     public $status;
-
-
+    public $categoryServiceId;
+    public $categoryDamageId;
 
     public function mount()
     {
@@ -27,6 +27,7 @@ class DashboardSeino extends Page
         $this->endDate = request()->query('endDate', now()->addDays(30)->format('Y-m-d'));
         $this->status = request()->query('status', null);
         $this->categoryServiceId = request()->query('categoryServiceId', null); // Capture category_service_id
+        $this->categoryDamageId = request()->query('categoryDamageId'); 
         $this->CustomerId = request()->query('customerId', 1); 
 
     
@@ -34,44 +35,70 @@ class DashboardSeino extends Page
 
     public function getStats()
     {
-        
-        $query = Service::query();
-     //   dd($this->CustomerId);
-     //  dd($this->endDate);
-        // Apply filters
+        // ❌ Lama:
+        // $query = Service::query();
+    
+        // ⭐ FIX: Base query dengan select minimum kolom → lebih ringan
+        $query = Service::select('id', 'amount_offer_revision', 'items');
+    
+    
+        // ⭐ FIX: Filter Date Range
         if ($this->startDate) {
             $query->whereDate('service_start_date', '>=', $this->startDate);
         }
-
         if ($this->endDate) {
             $query->whereDate('service_start_date', '<=', $this->endDate);
         }
+    
+        // ⭐ FIX: Filter Customer
         if ($this->CustomerId) {
-            $query->where('customer_id', '=', $this->CustomerId);
+            $query->where('customer_id', $this->CustomerId);
         }
-        $query->where('stage', '=', 2);
+    
+        // ⭐ FIX: Filter Status
         if ($this->status) {
             $query->where('status', $this->status);
         }
-
+    
+        // ⭐ FIX: Filter Category Service
         if ($this->categoryServiceId) {
             $query->where('category_service_id', $this->categoryServiceId);
         }
-          if ($this->categoryServiceId) {
-            $query->where('category_service_id', $this->categoryServiceId);
+    
+        // ⭐ NEW: Filter Category Damage (JSON)
+        if ($this->categoryDamageId) {
+            $query->whereJsonContains('items', [
+                'category_item_id' => (string) $this->categoryDamageId
+            ]);
         }
-
-        $revenue = $query->sum('amount_offer_revision');
-        $newCustomers = Customer::whereBetween('created_at', [$this->startDate, $this->endDate])->count();
-        $totalServices = $query->count();
-
-        // Return data for the dashboard
+    
+    
+        // ⭐ FIX: Eksekusi query sekali saja (lebih efisien)
+        $services = $query->get();
+    
+        // ⭐ FIX: Hitung revenue & total service tanpa query ulang
+        $revenue = $services->sum('amount_offer_revision');
+        $totalServices = $services->count();
+    
+    
+        // ⭐ FIX: Hitung newCustomers aman meski tanggal kosong
+        if ($this->startDate && $this->endDate) {
+            $newCustomers = Customer::whereBetween('created_at', [
+                $this->startDate,
+                $this->endDate
+            ])->count();
+        } else {
+            $newCustomers = 0; // atau boleh null
+        }
+    
+        // Return hasil
         return [
-            'revenue' => $revenue,
-         
-            'totalServices' => $totalServices,
+            'revenue'        => $revenue,
+            'totalServices'  => $totalServices,
+            'newCustomers'   => $newCustomers, // ⭐ optional returning
         ];
     }
+    
     public function getLocationRevenueData(): array
     {
         $data = \App\Models\Service::join('locations', 'services.location_id', '=', 'locations.id')
@@ -161,45 +188,102 @@ class DashboardSeino extends Page
     {
         $startYear = 2019;
         $endYear   = now()->year;
-        $startDate = request()->query('startDate');
-        $endDate = request()->query('endDate');
-        $status = request()->query('status');
-        $customerId = request()->query('customerId');
         $labels = range($startYear, $endYear);
-
-        $quantityData = [];
-        $revenueData  = [];
-
-        foreach ($labels as $year) {
-            $query = Service::whereYear('service_start_date', $year);
-            if ($customerId) {
-                    $query->where('customer_id', $customerId);
-            }
-            // if ($startDate) {
-            //     $query->where('service_start_date', '>=', $startDate);
-            // }
-
-            // if ($endDate) {
-            //     $query->where('service_start_date', '<=', $endDate);
-            // }
-
-            // if ($status) {
-            //     $query->where('status', $status);
-            // }
-
-            // if ($this->categoryServiceId) {
-            //     $query->where('category_service_id', $this->categoryServiceId);
-            // }
-            $quantityData[] = $query->count();
-            $revenueData[]  = $query->sum('amount_offer_revision');
+    
+        // ❌ REMOVE:
+        // $startDate = request()->query('startDate');
+        // $endDate   = request()->query('endDate');
+        // $status    = request()->query('status');
+        // $customerId = request()->query('customerId');
+    
+        // ⭐ FIX: Semua filter pakai property (lebih konsisten)
+        $startDate  = $this->startDate;
+        $endDate    = $this->endDate;
+        $status     = $this->status;
+        $customerId = $this->CustomerId;
+        $damageId   = $this->categoryDamageId;   // ⭐ NEW
+        $categoryId = $this->categoryServiceId;  // ⭐ NEW
+    
+    
+        // ⭐ NEW: Query tunggal untuk semua tahun (lebih optimal)
+        $query = Service::select(
+            'amount_offer_revision',
+            'items',
+            \DB::raw('YEAR(service_start_date) as year')
+        )->whereNotNull('service_start_date');
+    
+    
+        // ⭐ FIX: Filter Customer
+        if ($customerId) {
+            $query->where('customer_id', $customerId);
         }
-
+    
+        // ⭐ FIX: Filter date range
+        if ($startDate) {
+            $query->whereDate('service_start_date', '>=', $startDate);
+        }
+    
+        if ($endDate) {
+            $query->whereDate('service_start_date', '<=', $endDate);
+        }
+    
+        // ⭐ FIX: Filter status
+        if ($status) {
+            $query->where('status', $status);
+        }
+    
+        // ⭐ FIX: Filter Category Service
+        if ($categoryId) {
+            $query->where('category_service_id', $categoryId);
+        }
+    
+        // ⭐ NEW: Filter Category Damage (JSON)
+        if ($damageId) {
+            $query->whereJsonContains('items', [
+                'category_item_id' => (string) $damageId
+            ]);
+        }
+    
+    
+        // ⭐ NEW: Eksekusi query sekali saja
+        $services = $query->get();
+    
+        // ⭐ NEW: Persiapkan array default
+        $quantityData = array_fill_keys($labels, 0);
+        $revenueData  = array_fill_keys($labels, 0);
+    
+    
+        // ⭐ NEW: Loop results, group by year (super cepat)
+        foreach ($services as $service) {
+            $year = (int) $service->year;
+    
+            // Skip jika tahun tidak ada dalam range
+            if (!in_array($year, $labels)) {
+                continue;
+            }
+    
+            // Hitung quantity = jumlah item per service
+            $items = is_string($service->items)
+                ? json_decode($service->items, true)
+                : $service->items;
+    
+            $qty = is_array($items) ? count($items) : 0;
+    
+            // Sum hasil
+            $quantityData[$year] += $qty;
+            $revenueData[$year]  += (float) $service->amount_offer_revision;
+        }
+    
+    
+        // ⭐ FIX: output tetap sama formatnya
         return [
             'labels'   => $labels,
-            'quantity' => $quantityData,
-            'revenue'  => $revenueData,
+            'quantity' => array_values($quantityData),
+            'revenue'  => array_values($revenueData),
         ];
     }
+    
+
 
     public function getCategoryItems()
     {
@@ -219,7 +303,37 @@ class DashboardSeino extends Page
     }
     public function getCategoryItemQuantityData()
     {
-        $services = Service::pluck('items'); // ambil semua kolom items
+        // Build query untuk ambil services yang terfilter
+        $query = Service::query();
+    
+        // Filter Customer
+        if ($this->CustomerId) {
+            $query->where('customer_id', $this->CustomerId);
+        }
+    
+        // Filter Date Range
+        if ($this->startDate) {
+            $query->whereDate('service_start_date', '>=', $this->startDate);
+        }
+        if ($this->endDate) {
+            $query->whereDate('service_start_date', '<=', $this->endDate);
+        }
+    
+        // Filter Status
+        if ($this->status) {
+            $query->where('status', $this->status);
+        }
+    
+        // Filter Category Damage
+        // JSON array harus dicari dengan cara mengandung value spesifik
+        if ($this->categoryDamageId) {
+            $query->whereJsonContains('items', [
+                'category_item_id' => (string) $this->categoryDamageId
+            ]);
+        }
+    
+        // Eksekusi, ambil kolom items
+        $services = $query->pluck('items');
     
         $totals = [];
     
@@ -228,7 +342,7 @@ class DashboardSeino extends Page
                 continue;
             }
     
-            // kalau items sudah array, jangan decode lagi
+            // decode JSON ke array
             $items = is_string($itemsJson) ? json_decode($itemsJson, true) : $itemsJson;
     
             if (!is_array($items)) {
@@ -236,12 +350,17 @@ class DashboardSeino extends Page
             }
     
             foreach ($items as $item) {
+    
                 if (!isset($item['category_item_id']) || !isset($item['quantity'])) {
                     continue;
                 }
     
-                $categoryId = $item['category_item_id'];
+                $categoryId = (int) $item['category_item_id'];
                 $qty = (int) $item['quantity'];
+    
+                if ($this->categoryDamageId && $categoryId != $this->categoryDamageId) {
+                    continue; // Jika filter dipilih → hanya hitung kategori itu saja
+                }
     
                 if (!isset($totals[$categoryId])) {
                     $totals[$categoryId] = 0;
@@ -251,7 +370,7 @@ class DashboardSeino extends Page
             }
         }
     
-        // ambil nama kategori dari tabel category_items
+        // Ambil nama kategori
         $categoryNames = \DB::table('category_items')
             ->whereIn('id', array_keys($totals))
             ->pluck('name', 'id');
@@ -270,90 +389,133 @@ class DashboardSeino extends Page
         ];
     }
     
+    
     public function getCategoryItemQuantityPerYear()
     {
-    // Ambil data items dan tahun dari services
-    $query = Service::select('items', \DB::raw('YEAR(service_start_date) as year'))
-        ->whereNotNull('service_start_date');
-
+        // Build base query
+        $query = Service::select(
+            'items',
+            \DB::raw('YEAR(service_start_date) as year')
+        )->whereNotNull('service_start_date');
+    
+        // Filter Customer
         if ($this->CustomerId) {
-            $query->where('customer_id', '=', $this->CustomerId);
+            $query->where('customer_id', $this->CustomerId);
         }
-
+    
+        // Filter Date Range
+        if ($this->startDate) {
+            $query->whereDate('service_start_date', '>=', $this->startDate);
+        }
+    
+        if ($this->endDate) {
+            $query->whereDate('service_start_date', '<=', $this->endDate);
+        }
+    
+        // Filter Status
+        if ($this->status) {
+            $query->where('status', $this->status);
+        }
+    
+        // Filter Category Damage (JSON)
+        if ($this->categoryDamageId) {
+            $query->whereJsonContains('items', [
+                'category_item_id' => (string) $this->categoryDamageId
+            ]);
+        }
+    
+        // Ambil services terfilter
         $services = $query->get();
-
-    $totals = []; // [category_id][year] => total qty
-
-    foreach ($services as $service) {
-        $itemsData = $service->items;
-
-        // Jika items berupa array, skip json_decode
-        if (is_array($itemsData)) {
-            $items = $itemsData;
-        } elseif (is_string($itemsData) && !empty($itemsData)) {
-            $decoded = json_decode($itemsData, true);
-            $items = is_array($decoded) ? $decoded : [];
-        } else {
-            continue;
-        }
-
-        foreach ($items as $item) {
-            $categoryId = $item['category_item_id'] ?? null;
-            $qty = isset($item['quantity']) ? (int) $item['quantity'] : 0;
-
-            if ($categoryId && $qty > 0) {
+    
+        $totals = []; // [category_id][year] => qty total
+    
+        foreach ($services as $service) {
+    
+            $itemsData = $service->items;
+    
+            // Decode JSON
+            if (is_array($itemsData)) {
+                $items = $itemsData;
+            } elseif (is_string($itemsData) && !empty($itemsData)) {
+                $decoded = json_decode($itemsData, true);
+                $items = is_array($decoded) ? $decoded : [];
+            } else {
+                continue;
+            }
+    
+            foreach ($items as $item) {
+    
+                // Validasi
+                if (!isset($item['category_item_id']) || !isset($item['quantity'])) {
+                    continue;
+                }
+    
+                $categoryId = (int) $item['category_item_id'];
+                $qty = (int) $item['quantity'];
+    
+                // Jika user pilih kategori → hanya tampilkan kategori itu
+                if ($this->categoryDamageId && $categoryId != $this->categoryDamageId) {
+                    continue;
+                }
+    
+                if ($qty <= 0) {
+                    continue;
+                }
+    
                 $year = $service->year ?? 'Unknown';
+    
+                // Inisialisasi nested array
                 if (!isset($totals[$categoryId])) {
                     $totals[$categoryId] = [];
                 }
                 if (!isset($totals[$categoryId][$year])) {
                     $totals[$categoryId][$year] = 0;
                 }
+    
+                // Akumulasi qty
                 $totals[$categoryId][$year] += $qty;
             }
         }
-    }
-
-    // Ambil nama kategori
-    $categoryNames = \DB::table('category_items')
-        ->whereIn('id', array_keys($totals))
-        ->pluck('name', 'id');
-
-    // Siapin label kategori dan tahun unik
-    $labels = [];
-    $years = [];
-
-    foreach ($totals as $categoryId => $yearData) {
-        $labels[$categoryId] = $categoryNames[$categoryId] ?? "Category {$categoryId}";
-        foreach (array_keys($yearData) as $year) {
-            $years[$year] = true;
-        }
-    }
-
-    $labels = array_values($labels);
-    $years = array_keys($years);
-    sort($years);
-
-    // Bentuk dataset per tahun
-    $datasets = [];
-    foreach ($years as $year) {
-        $data = [];
+    
+        // Ambil nama kategori
+        $categoryNames = \DB::table('category_items')
+            ->whereIn('id', array_keys($totals))
+            ->pluck('name', 'id');
+    
+        // Siapkan label & daftar tahun
+        $labels = [];
+        $years = [];
+    
         foreach ($totals as $categoryId => $yearData) {
-            $data[] = $yearData[$year] ?? 0;
+            $labels[] = $categoryNames[$categoryId] ?? "Category {$categoryId}";
+            foreach (array_keys($yearData) as $year) {
+                $years[$year] = true;
+            }
         }
-
-        $datasets[] = [
-            'label' => $year,
-            'data' => $data,
+    
+        $years = array_keys($years);
+        sort($years);
+    
+        // Build dataset per tahun
+        $datasets = [];
+        foreach ($years as $year) {
+            $data = [];
+            foreach ($totals as $categoryId => $yearData) {
+                $data[] = $yearData[$year] ?? 0;
+            }
+    
+            $datasets[] = [
+                'label' => $year,
+                'data' => $data,
+            ];
+        }
+    
+        return [
+            'labels' => $labels,
+            'datasets' => $datasets,
         ];
     }
-
-    return [
-        'labels' => $labels,
-        'datasets' => $datasets,
-    ];
-}
-
+    
 
 
 
