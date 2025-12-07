@@ -79,7 +79,7 @@
   <div>
     <h2 style="margin: 0;">P. T. MITRA TOYOTAKA INDONESIA</h2>
     <p style="margin: 0;"><strong>Karawang Branch</strong></p>
-    <p style="margin: 0;">Jl. Raya Klari Km. 16, Klapanunggal, Karawang, Jawa Barat, 41371 Telp: (0267) 8400118</p>
+    <p style="margin: 0;">Jl. Raya Klari Km. 10, Klapanunggal, Karawang, Jawa Barat, 41371 Telp: (0267) 8400118</p>
   </div>
   <!-- <img src="/images/certificate.png" alt="logo kanan" style="height: 50px; weight:100px; margin-left: 15px;" /> -->
 </div>

@@ -18,7 +18,7 @@
     table {
       border-collapse: collapse;
       width: 100%;
-      margin-top: 10px;
+      margin-top: 10px;  
     }
     th, td {
       border: 1px solid #000;
@@ -61,7 +61,7 @@
   <button onclick="window.print()" class="btn no-print">🖨 Cetak</button>
 
   <div class="container">
-    <h2>Service Request Detail</h2>
+    <h2>Service Request Detail (BEFORE)</h2>
     <hr>
 
     <h3>General Info</h3>
