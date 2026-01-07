@@ -214,6 +214,11 @@ class QuotationsResource extends Resource
                     'unique' => 'Nomor penawaran sudah digunakan. Silakan masukkan nomor lain.',
                 ]),
 
+            TextInput::make('attn_quotation')
+                ->label('Attn')
+                ->placeholder('Person to attention for this quotation')
+                ->columnSpanFull(),
+
             TextInput::make('amount_offer')->numeric()->required(),
             TextInput::make('amount_offer_revision')->numeric(),
             TextInput::make('payment_terms')

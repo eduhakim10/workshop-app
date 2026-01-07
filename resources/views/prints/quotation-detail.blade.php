@@ -86,8 +86,8 @@
         <td class="no-border text-left">
           <strong>Quotation No:</strong> 0143/MTI-MRK/QR/06/2025<br />
           <strong>Date:</strong> 01/06/2025<br />
-          <strong>Attn:</strong> Mr. Deki<br />
-          <strong>From:</strong> PT MTI
+        <strong>Attn:</strong> {{ $service->attn_quotation ?? '-' }}<br />
+          <strong>From:</strong> PT Mitra Toyotaka Indonesia
         </td>
       </tr>
     </table>
