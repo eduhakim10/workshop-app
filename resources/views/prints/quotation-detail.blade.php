@@ -79,8 +79,8 @@
       <tr>
         <td class="no-border text-left" style="width: 50%;">
           <strong>To:</strong><br />
-          <span>PT. SENO INDOOMIT LOGISTICS</span><br />
-          Jl. XYZ No. 123<br />
+          <span> {{ $service->customer->name }}</span><br />
+           {{ $service->customer->address }}<br />
           Karawang, Jawa Barat
         </td>
         <td class="no-border text-left">
