@@ -14,6 +14,7 @@ class Service extends Model
         'vehicle_id',
         'category_service_id',
         'offer_number',
+        'attn_quotation',
         'amount_offer',
         'amount_offer_revision',
         'handover_date',
