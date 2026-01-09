@@ -54,12 +54,23 @@ class EmployeeResource extends Resource
                         ->maxLength(500),
                     FileUpload::make('signature')
                         ->label('Tanda Tangan')
-                        ->image()
+                        ->disk('public')
                         ->directory('signatures')
+                        ->image()
+                        ->imageEditor()
+                        ->imageEditorAspectRatios([
+                            null,
+                            '16:9',
+                            '4:3',
+                            '1:1',
+                        ])
+                        ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/jpg', 'image/gif'])
+                        ->maxSize(2048)
                         ->imagePreviewHeight('150')
                         ->downloadable()
                         ->openable()
-                        ->nullable(),
+                        ->nullable()
+                        ->helperText('Upload gambar tanda tangan (max 2MB, format: PNG, JPG, JPEG, GIF)'),
                 ]);
     }
 
