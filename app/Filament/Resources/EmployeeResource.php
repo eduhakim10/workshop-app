@@ -57,20 +57,10 @@ class EmployeeResource extends Resource
                         ->disk('public')
                         ->directory('signatures')
                         ->image()
-                        ->imageEditor()
-                        ->imageEditorAspectRatios([
-                            null,
-                            '16:9',
-                            '4:3',
-                            '1:1',
-                        ])
-                        ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/jpg', 'image/gif'])
                         ->maxSize(2048)
-                        ->imagePreviewHeight('150')
-                        ->downloadable()
-                        ->openable()
                         ->nullable()
-                        ->helperText('Upload gambar tanda tangan (max 2MB, format: PNG, JPG, JPEG, GIF)'),
+                        ->helperText('Upload gambar tanda tangan (max 2MB, format: PNG, JPG, JPEG, GIF)')
+                        ->visibility('public'),
                 ]);
     }
 
