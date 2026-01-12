@@ -154,7 +154,11 @@ class ServiceRequestController extends Controller
     
         // 🔹 Update kerusakan (pivot table)
         if ($request->has('kerusakan')) {
-            $serviceRequest->damages()->sync($request->kerusakan);
+            $syncData = [];
+            foreach ($request->kerusakan as $damageId) {
+                $syncData[$damageId] = ['type' => 'before'];
+            }
+            $serviceRequest->damages()->sync($syncData);
         }
     
         // 🔹 Upload & simpan foto baru
