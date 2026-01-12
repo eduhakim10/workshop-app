@@ -84,7 +84,7 @@
           Karawang, Jawa Barat
         </td>
         <td class="no-border text-left">
-          <strong>Quotation No:</strong> 0143/MTI-MRK/QR/06/2025<br />
+          <strong>Quotation No:</strong> {{ $service->offer_number ?? '-' }}<br />
        <strong>Date:</strong> {{ \Carbon\Carbon::parse($service->created_at)->format('d/m/Y') }}<br />
         <strong>Attn:</strong> {{ $service->attn_quotation ?? '-' }}<br />
           <strong>From:</strong> PT Mitra Toyotaka Indonesia
