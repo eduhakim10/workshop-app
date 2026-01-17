@@ -56,6 +56,8 @@ class ServicesController extends Controller
             'after_damages.*.damage_id' => 'required|integer|exists:damages,id',
             'deleted_photo_ids' => 'nullable|array',
             'deleted_photo_ids.*' => 'integer',
+            'deleted_after_damage_ids' => 'nullable|array',
+            'deleted_after_damage_ids.*' => 'integer',
         ]);
 
         DB::beginTransaction();
@@ -81,6 +83,19 @@ class ServicesController extends Controller
                         // Hapus record dari database
                         $photo->delete();
                         Log::info('[updateAfter] Deleted photo ID:', ['id' => $photoId]);
+                    }
+                }
+            }
+
+            // 2.5️⃣ Hapus afterdamages yang di-request (deleted_after_damage_ids)
+            if ($request->filled('deleted_after_damage_ids')) {
+                Log::info('[updateAfter] Deleting after damages:', $request->deleted_after_damage_ids);
+                
+                foreach ($request->deleted_after_damage_ids as $damageId) {
+                    $damage = ServicesRequestDamage::find($damageId);
+                    if ($damage && $damage->service_request_id == $service->service_request_id && $damage->type === 'after') {
+                        $damage->delete();
+                        Log::info('[updateAfter] Deleted after damage ID:', ['id' => $damageId]);
                     }
                 }
             }
