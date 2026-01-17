@@ -101,14 +101,36 @@ class ServicesController extends Controller
 
             // 4️⃣ Insert kerusakan after ke services_request_damages
             if ($request->filled('after_damages')) {
-                Log::info('[updateAfter] Saving damages:', $request->after_damages);
-                foreach ($request->after_damages as $damage) {
-                    ServicesRequestDamage::create([
-                        'service_request_id' => $service->service_request_id,
-                        'damage_id' => $damage['damage_id'],
-                        'damage_name' => $damage['damage_name'] ?? null,
-                        'type' => 'after',
-                    ]);
+                Log::info('[updateAfter] Saving damages (deduplicating)...', $request->after_damages);
+
+                // Deduplicate by damage_id to avoid unique constraint violation
+                $damageItems = collect($request->after_damages)
+                    ->filter(function ($d) {
+                        return isset($d['damage_id']) && is_numeric($d['damage_id']);
+                    })
+                    ->unique('damage_id')
+                    ->values();
+
+                foreach ($damageItems as $damage) {
+                    $damageId = (int) $damage['damage_id'];
+                    $damageName = $damage['damage_name'] ?? null;
+
+                    // Use firstOrCreate to safely avoid duplicate inserts
+                    $existing = ServicesRequestDamage::firstOrCreate(
+                        [
+                            'service_request_id' => $service->service_request_id,
+                            'damage_id' => $damageId,
+                        ],
+                        [
+                            'damage_name' => $damageName,
+                            'type' => 'after',
+                        ]
+                    );
+
+                    // If record already existed but damage_name changed, update it
+                    if ($existing && $existing->wasRecentlyCreated === false && $damageName && $existing->damage_name !== $damageName) {
+                        $existing->update(['damage_name' => $damageName]);
+                    }
                 }
             }
 
