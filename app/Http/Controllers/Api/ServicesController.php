@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\ServiceRequestPhoto;
 use App\Models\ServicesRequestDamage;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 
 class ServicesController extends Controller
@@ -44,6 +45,8 @@ class ServicesController extends Controller
         Log::info('[updateAfter] Incoming Request:', [
             'id' => $id,
             'payload' => $request->all(),
+            'files' => $request->hasFile('after_photos') ? 'Yes' : 'No',
+            'deleted_ids' => $request->deleted_photo_ids ?? 'None',
         ]);
         // Validasi input
         $request->validate([
@@ -51,6 +54,8 @@ class ServicesController extends Controller
             'after_photos.*' => 'nullable|image|max:5120', // max 5MB per file
             'after_damages' => 'nullable|array',
             'after_damages.*.damage_id' => 'required|integer|exists:damages,id',
+            'deleted_photo_ids' => 'nullable|array',
+            'deleted_photo_ids.*' => 'integer',
         ]);
 
         DB::beginTransaction();
@@ -62,8 +67,27 @@ class ServicesController extends Controller
             $service->notes_after = $request->notes_after;
             $service->save();
 
-            // 2️⃣ Upload foto after & insert ke service_request_photos
+            // 2️⃣ Hapus foto yang di-request (deleted_photo_ids)
+            if ($request->filled('deleted_photo_ids')) {
+                Log::info('[updateAfter] Deleting photos:', $request->deleted_photo_ids);
+                
+                foreach ($request->deleted_photo_ids as $photoId) {
+                    $photo = ServiceRequestPhoto::find($photoId);
+                    if ($photo && $photo->service_request_id == $service->service_request_id) {
+                        // Hapus file dari storage
+                        if (Storage::disk('public')->exists($photo->file_path)) {
+                            Storage::disk('public')->delete($photo->file_path);
+                        }
+                        // Hapus record dari database
+                        $photo->delete();
+                        Log::info('[updateAfter] Deleted photo ID:', ['id' => $photoId]);
+                    }
+                }
+            }
+
+            // 3️⃣ Upload foto after baru & insert ke service_request_photos
             if ($request->hasFile('after_photos')) {
+                Log::info('[updateAfter] Uploading new photos');
                 foreach ($request->file('after_photos') as $file) {
                     $path = $file->store('after_photos', 'public');
 
@@ -75,8 +99,9 @@ class ServicesController extends Controller
                 }
             }
 
-            // 3️⃣ Insert kerusakan after ke services_request_damages
+            // 4️⃣ Insert kerusakan after ke services_request_damages
             if ($request->filled('after_damages')) {
+                Log::info('[updateAfter] Saving damages:', $request->after_damages);
                 foreach ($request->after_damages as $damage) {
                     ServicesRequestDamage::create([
                         'service_request_id' => $service->service_request_id,
@@ -98,10 +123,14 @@ class ServicesController extends Controller
                 'after_damages' => ServicesRequestDamage::where('service_request_id', $service->service_request_id)
                     ->where('type', 'after')
                     ->get(),
-            ]);
+            ], 200);
 
         } catch (\Throwable $e) {
             DB::rollBack();
+            Log::error('[updateAfter] Error:', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal update data After',
