@@ -38,13 +38,28 @@ class ServiceRequestController extends Controller
 
     public function store(Request $request)
     {
-        // print_r($request->input());
-        // die;
-        $request->merge([
-            'kerusakan' => array_filter($request->kerusakan ?? [], fn($v) => !empty($v))
+        // Add logging to help debug requests from different origins
+        \Log::info('ServiceRequest.store called', [
+            'ip' => $request->ip(),
+            'all' => $request->all(),
+            'has_files' => $request->hasFile('photos'),
         ]);
-        
-        $validated = $request->validate([
+        if ($request->hasFile('photos')) {
+            foreach ($request->file('photos') as $f) {
+                \Log::info('ServiceRequest.store uploaded file', [
+                    'name' => $f->getClientOriginalName(),
+                    'size' => $f->getSize(),
+                    'type' => $f->getClientMimeType(),
+                ]);
+            }
+        }
+
+        try {
+            $request->merge([
+                'kerusakan' => array_filter($request->kerusakan ?? [], fn($v) => !empty($v))
+            ]);
+
+            $validated = $request->validate([
             // 'sr_number'    => 'required|string|unique:service_requests',
             'customer_id'  => 'required|exists:customers,id',
             'inspection_date' => 'nullable|date',
@@ -85,8 +100,20 @@ class ServiceRequestController extends Controller
                 ]);
             }
         }
+            \Log::info('ServiceRequest created', ['id' => $serviceRequest->id]);
 
-        return response()->json($serviceRequest->load('photos'));
+            return response()->json($serviceRequest->load('photos'));
+        } catch (\Exception $e) {
+            \Log::error('ServiceRequest.store exception', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create service request',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**
