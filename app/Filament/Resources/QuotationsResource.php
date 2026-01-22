@@ -411,7 +411,10 @@ class QuotationsResource extends Resource
     }
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->where('stage', 1); // untuk quotation
+        // Tampilkan quotations dengan stage 1 (Quotation) dan 2 (Draft/Revision)
+        return parent::getEloquentQuery()
+            ->whereIn('stage', [1, 2])
+            ->where('created_at', '>=', '2025-02-19');
     }
     public static function getPages(): array
     {
