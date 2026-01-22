@@ -63,7 +63,7 @@ class EditQuotations extends EditRecord
                     ->send();
                     $this->redirect(ServiceResource::getUrl());
                 })
-                ->visible(fn () => $this->record->stage == 1), 
+                ->visible(fn () => in_array($this->record->stage, [1, 2])), 
 
 
                  Action::make('Print Overview')
