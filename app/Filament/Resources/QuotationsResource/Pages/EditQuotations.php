@@ -48,10 +48,13 @@ class EditQuotations extends EditRecord
                     }
                     
                     // jangan encode, langsung assign array
-                    $quotation->items = $finalItems;
-                    
+                    // Reset items first to ensure DB recognizes the change when overwritten
+                    $quotation->items = null;
+                    $quotation->save();
 
-                    $this->record->save();
+                    // Timpah dengan items final
+                    $quotation->items = $finalItems;
+                    $quotation->save();
 
                  //   $this->notify('success', 'Quotation approved as service.');
                  Notification::make()
