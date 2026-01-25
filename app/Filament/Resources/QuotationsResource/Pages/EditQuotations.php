@@ -14,6 +14,18 @@ class EditQuotations extends EditRecord
 {
     protected static string $resource = QuotationsResource::class;
 
+    public function mount($record = null): void
+    {
+        parent::mount($record);
+
+        if ($message = session('info')) {
+            Notification::make()
+                ->title($message)
+                ->warning()
+                ->send();
+        }
+    }
+
     protected function getHeaderActions(): array
     {
         return [
