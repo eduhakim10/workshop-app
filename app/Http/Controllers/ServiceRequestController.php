@@ -18,7 +18,9 @@ class ServiceRequestController extends Controller
             'damages' => function($query) {
                 $query->where('type', 'before'); // filter type=after
             },      // relasi ke services_request_damages
-            'photos',       // relasi ke service_request_photos
+            'photos' => function($query) {
+                $query->where('type', 'before'); // filter type=before
+            }, // relasi ke service_request_photos
         ])->findOrFail($id);
         // echo '<pre>';
         // print_r(compact('serviceRequest'));
