@@ -380,6 +380,8 @@ class QuotationsResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('offer_number')->label('Offer Number')->searchable(),
+                TextColumn::make('serviceRequest.sr_number')->label('SR Number')->searchable(),
+                TextColumn::make('vehicle.license_plate')->label('License Plate')->searchable(),
                 TextColumn::make('amount_offer')->label('Amount')->searchable(),
                 TextColumn::make('amount_offer_revision')->label('Amount Revision')->searchable(),
                 TextColumn::make('customer.name')->label('Customer')->searchable(),
@@ -387,13 +389,39 @@ class QuotationsResource extends Resource
                 TextColumn::make('employee.name')->label('Prepared by'),
             ])
             ->filters([
-                Filter::make('offer_number')
-                    ->label('Offer Number')
+                Filter::make('sr_number')
+                    ->label('SR Number')
+                    ->query(function (Builder $query, $data) {
+                        if (!empty($data['sr_number'])) {
+                            $query->whereHas('serviceRequest', function ($q) use ($data) {
+                                $q->where('sr_number', 'like', '%' . $data['sr_number'] . '%');
+                            });
+                        }
+                    })
+                    ->form([
+                        TextInput::make('sr_number')
+                            ->label('SR Number')
+                            ->placeholder('Enter SR Number'),
+                    ]),
+                Filter::make('license_plate')
+                    ->label('License Plate')
                     ->query(function (Builder $query, $data) {
                         if (!empty($data['license_plate'])) {
                             $query->whereHas('vehicle', function ($vehicleQuery) use ($data) {
                                 $vehicleQuery->where('license_plate', 'like', '%' . $data['license_plate'] . '%');
                             });
+                        }
+                    })
+                    ->form([
+                        TextInput::make('license_plate')
+                            ->label('License Plate')
+                            ->placeholder('Enter License Plate'),
+                    ]),
+                Filter::make('offer_number')
+                    ->label('Offer Number')
+                    ->query(function (Builder $query, $data) {
+                        if (!empty($data['offer_number'])) {
+                            $query->where('offer_number', 'like', '%' . $data['offer_number'] . '%');
                         }
                     })
                     ->form([

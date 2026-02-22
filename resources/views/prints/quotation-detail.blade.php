@@ -84,10 +84,32 @@
           Karawang, Jawa Barat
         </td>
         <td class="no-border text-left">
-          <strong>Quotation No:</strong> {{ $service->offer_number ?? '-' }}<br />
-       <strong>Date:</strong> {{ \Carbon\Carbon::parse($service->created_at)->format('d/m/Y') }}<br />
-        <strong>Attn:</strong> {{ $service->attn_quotation ?? '-' }}<br />
-          <strong>From:</strong> PT Mitra Toyotaka Indonesia
+          <div style="display:flex; align-items:flex-start;">
+            <div style="width:120px;">
+              <strong>Quotation No</strong><br />
+              <strong>Date</strong><br />
+              <strong>Attn</strong><br />
+              <strong>From</strong><br />
+              <strong>SR No</strong><br />
+              <strong>License Plate</strong>
+            </div>
+            <div>
+              :<br />
+              :<br />
+              :<br />
+              :<br />
+              :<br />
+              :
+            </div>
+            <div style="flex:1; padding-left:2px;">
+              {{ $service->offer_number ?? '-' }}<br />
+              {{ \Carbon\Carbon::parse($service->created_at)->format('d/m/Y') }}<br />
+              {{ $service->attn_quotation ?? '-' }}<br />
+              PT Mitra Toyotaka Indonesia<br />
+              {{ $service->serviceRequest?->sr_number ?? '-' }}<br />
+              {{ $service->vehicle?->license_plate ?? '-' }}
+            </div>
+          </div>
         </td>
       </tr>
     </table>
