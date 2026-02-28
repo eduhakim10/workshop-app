@@ -59,13 +59,21 @@
       <div style="width:65%;">
         <table style="border:none;">
           @php
-            $damages = $serviceRequest->damages->pluck('name')->take(10)->toArray();
-            $damages = array_pad($damages, 10, '................');
+            $damages = $serviceRequest->damages->pluck('name')->toArray();
+            $total = count($damages);
+            if ($total <= 10) {
+                $damages = array_pad($damages, 10, '................');
+                $leftCount = 5;
+            } else {
+                $leftCount = (int) ceil($total / 2);
+            }
+            $rightCount = ($total <= 10) ? 5 : $total - $leftCount;
+            $rows = max($leftCount, $rightCount);
           @endphp
-          @for ($i = 0; $i < 5; $i++)
+          @for ($i = 0; $i < $rows; $i++)
           <tr style="border:none;">
-            <td style="border:none; padding:4px 0;">{{ $i+1 }}. {{ $damages[$i] }}</td>
-            <td style="border:none; padding:4px 0;">{{ $i+6 }}. {{ $damages[$i+5] }}</td>
+            <td style="border:none; padding:4px 0;">{{ $i+1 }}. {{ $damages[$i] ?? '................' }}</td>
+            <td style="border:none; padding:4px 0;">{{ $i + $leftCount + 1 }}. {{ $damages[$i + $leftCount] ?? '................' }}</td>
           </tr>
           @endfor
         </table>

@@ -442,7 +442,8 @@ class QuotationsResource extends Resource
         // Tampilkan quotations dengan stage 1 (Quotation) dan 2 (Draft/Revision)
         return parent::getEloquentQuery()
             ->whereIn('stage', [1, 2])
-            ->where('created_at', '>=', '2025-02-19');
+            ->where('created_at', '>=', '2025-02-19')
+              ->orderBy('created_at', 'desc');
     }
     public static function getPages(): array
     {
