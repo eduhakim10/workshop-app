@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
- <title>Quotation {{ $service->offer_number }}</title>
+ <title>{{ $service->offer_number }}</title>
   <style>
     body {
       font-family: Arial, sans-serif;
