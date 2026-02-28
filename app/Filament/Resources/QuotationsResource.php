@@ -255,15 +255,14 @@ class QuotationsResource extends Resource
             Textarea::make('notes'),
             Textarea::make('notes_before')
     ->label('Notes Before')
-    ->default(function (callable $get) {
-        $srId = $get('service_request_id'); // ambil ID service request yang dipilih
-        if ($srId) {
-            $sr = \App\Models\ServiceRequest::find($srId);
-            return $sr?->notes; // ambil field notes
+    ->afterStateHydrated(function ($state, $set, $record) {
+        if (!$state && $record?->service_request_id) {
+            $sr = \App\Models\ServiceRequest::find($record->service_request_id);
+            $set('notes_before', $sr?->notes);
         }
-        return null;
     })
-    ->disabled() // readonly
+    ->disabled()
+    ->dehydrated()
     ->columnSpanFull(),
 
 
