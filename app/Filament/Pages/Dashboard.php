@@ -18,6 +18,8 @@ class Dashboard extends Page
     public $startDate;
     public $endDate;
     public $status;
+    public $categoryServiceId;
+    public $categoryDamages;
 
     protected static string $view = 'filament.pages.dashboard';
 
@@ -28,8 +30,8 @@ class Dashboard extends Page
         $this->startDate = request()->query('startDate', now()->subDays(30)->format('Y-m-d'));
         $this->endDate = request()->query('endDate', now()->addDays(30)->format('Y-m-d'));
         $this->status = request()->query('status', null);
-        $this->categoryServiceId = request()->query('categoryServiceId', null); // Capture category_service_id
-        $this->categoryDamages = request()->query('categoryDamageId', 1); // Capture category_service_id
+        $this->categoryServiceId = request()->query('categoryServiceId', null);
+        $this->categoryDamages = request()->query('categoryDamageId', null);
 
 
     
@@ -83,12 +85,25 @@ class Dashboard extends Page
     }
     public function getLocationRevenueData(): array
     {
-        $data = \App\Models\Service::join('locations', 'services.location_id', '=', 'locations.id')
-        ->selectRaw('locations.name as location, SUM(services.amount_offer_revision) as total_revenue')
-        ->groupBy('locations.name')
-        ->pluck('total_revenue', 'location')
-        ->toArray();
-    
+        $query = \App\Models\Service::join('locations', 'services.location_id', '=', 'locations.id')
+            ->selectRaw('locations.name as location, SUM(services.amount_offer_revision) as total_revenue')
+            ->groupBy('locations.name');
+
+        if ($this->startDate) {
+            $query->whereDate('services.service_start_date', '>=', $this->startDate);
+        }
+        if ($this->endDate) {
+            $query->whereDate('services.service_start_date', '<=', $this->endDate);
+        }
+        if ($this->status) {
+            $query->where('services.status', $this->status);
+        }
+        if ($this->categoryServiceId) {
+            $query->where('services.category_service_id', $this->categoryServiceId);
+        }
+
+        $data = $query->pluck('total_revenue', 'location')->toArray();
+
         return [
             'labels' => array_keys($data),
             'data' => array_values($data),
@@ -128,10 +143,24 @@ class Dashboard extends Page
 
     public function getServiceQuantityData()
     {
-        $data = Service::selectRaw('locations.name as location, COUNT(services.id) as total_services')
+        $query = Service::selectRaw('locations.name as location, COUNT(services.id) as total_services')
             ->join('locations', 'services.location_id', '=', 'locations.id')
-            ->groupBy('locations.name')
-            ->get();
+            ->groupBy('locations.name');
+
+        if ($this->startDate) {
+            $query->whereDate('services.service_start_date', '>=', $this->startDate);
+        }
+        if ($this->endDate) {
+            $query->whereDate('services.service_start_date', '<=', $this->endDate);
+        }
+        if ($this->status) {
+            $query->where('services.status', $this->status);
+        }
+        if ($this->categoryServiceId) {
+            $query->where('services.category_service_id', $this->categoryServiceId);
+        }
+
+        $data = $query->get();
 
         return [
             'labels' => $data->pluck('location'),
@@ -140,16 +169,29 @@ class Dashboard extends Page
     }
     public function getServicePercentageData()
     {
-        $data = Service::selectRaw('locations.name as location, COUNT(services.id) as total_services')
+        $query = Service::selectRaw('locations.name as location, COUNT(services.id) as total_services')
             ->join('locations', 'services.location_id', '=', 'locations.id')
-            ->groupBy('locations.name')
-            ->get();
+            ->groupBy('locations.name');
 
+        if ($this->startDate) {
+            $query->whereDate('services.service_start_date', '>=', $this->startDate);
+        }
+        if ($this->endDate) {
+            $query->whereDate('services.service_start_date', '<=', $this->endDate);
+        }
+        if ($this->status) {
+            $query->where('services.status', $this->status);
+        }
+        if ($this->categoryServiceId) {
+            $query->where('services.category_service_id', $this->categoryServiceId);
+        }
+
+        $data = $query->get();
         $totalServices = $data->sum('total_services');
 
         return [
             'labels' => $data->pluck('location'),
-            'data' => $data->map(fn ($item) => round(($item->total_services / $totalServices) * 100, 2)),
+            'data' => $data->map(fn ($item) => $totalServices > 0 ? round(($item->total_services / $totalServices) * 100, 2) : 0),
         ];
     }
     public function getChartData()
@@ -258,10 +300,24 @@ class Dashboard extends Page
         ];
     }
     Log::info("Category found", ['id' => $categoryItem->id, 'name' => $categoryItem->name]);
-    // Ambil semua service + join vehicle
-    $services = Service::join('vehicles', 'services.vehicle_id', '=', 'vehicles.id')
-        ->select('vehicles.karoseri', 'services.items')
-        ->get();
+    // Ambil semua service + join vehicle (dengan filter aktif)
+    $serviceQuery = Service::join('vehicles', 'services.vehicle_id', '=', 'vehicles.id')
+        ->select('vehicles.karoseri', 'services.items');
+
+    if ($this->startDate) {
+        $serviceQuery->whereDate('services.service_start_date', '>=', $this->startDate);
+    }
+    if ($this->endDate) {
+        $serviceQuery->whereDate('services.service_start_date', '<=', $this->endDate);
+    }
+    if ($this->status) {
+        $serviceQuery->where('services.status', $this->status);
+    }
+    if ($this->categoryServiceId) {
+        $serviceQuery->where('services.category_service_id', $this->categoryServiceId);
+    }
+
+    $services = $serviceQuery->get();
     Log::info("Total services fetched", ['count' => $services->count()]);
 
     $result = [];
