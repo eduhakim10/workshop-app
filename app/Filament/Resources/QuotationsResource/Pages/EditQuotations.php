@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\QuotationsResource\Pages;
 
 use App\Filament\Resources\QuotationsResource;
+use App\Filament\Resources\QuotationsResource\Pages\CreateQuotations;
 use App\Filament\Resources\ServiceResource;
 
 use Filament\Pages\Actions\Action;
@@ -94,12 +95,11 @@ class EditQuotations extends EditRecord
 
     protected function mutateFormDataBeforeSave(array $data): array
         {
-            // kalau action nya edit, set updated_at_offer
             if ($this->record) {
                 $data['updated_at_offer'] = now();
             }
 
-            return $data;
+            return CreateQuotations::applyPricingTotals($data);
         }
         protected function getActions(): array
     {

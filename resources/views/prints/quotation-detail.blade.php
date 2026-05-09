@@ -44,15 +44,14 @@
       display: none !important;
    }
      @page {
-    margin: 20mm; /* atur margin */
+    margin: 20mm;
   }
-  
+
   body {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
 
-  /* Sembunyiin header/footer bawaan browser */
   @page {
     size: auto;
     margin: 0;
@@ -91,9 +90,11 @@
               <strong>Attn</strong><br />
               <strong>From</strong><br />
               <strong>SR No</strong><br />
-              <strong>License Plate</strong>
+              <strong>License Plate</strong><br />
+              <strong>Klasifikasi</strong>
             </div>
             <div>
+              :<br />
               :<br />
               :<br />
               :<br />
@@ -107,7 +108,8 @@
               {{ $service->attn_quotation ?? '-' }}<br />
               PT Mitra Toyotaka Indonesia<br />
               {{ $service->serviceRequest?->sr_number ?? '-' }}<br />
-              {{ $service->vehicle?->license_plate ?? '-' }}
+              {{ $service->vehicle?->license_plate ?? '-' }}<br />
+              {{ $service->damage_classification ?? '-' }}
             </div>
           </div>
         </td>
@@ -116,39 +118,53 @@
 
     <p>We are pleased to offer you the following price:</p>
 
+@php
+    use App\Helpers\QuotationPricing;
+
+    $items = $service->items_offer ?? [];
+    $totals = QuotationPricing::calcFromGroups(
+        $items,
+        $service->ppn_type,
+        $service->ppn_percent
+    );
+    $ppnPercentLabel = rtrim(rtrim(number_format((float) ($service->ppn_percent ?? 0), 2, ',', '.'), '0'), ',');
+    if ($ppnPercentLabel === '') { $ppnPercentLabel = '0'; }
+@endphp
+
     <table border="1" cellpadding="6" cellspacing="0" width="100%" style="border-collapse: collapse; font-family: Arial, sans-serif; font-size: 12px;">
   <thead>
     <tr>
       <th style="width:5%; text-align:center;">NO</th>
-      <th style="width:40%; text-align:center;">ITEM</th>
-      <th style="width:10%; text-align:center;">QTY ORDER<br>(UNIT)</th>
-      <th style="width:15%; text-align:center;">PRICE / UNIT</th>
-      <th style="width:15%; text-align:center;">AMOUNT</th>
-      <th style="width:15%; text-align:center;">REMARKS</th>
+      <th style="width:30%; text-align:center;">ITEM</th>
+      <th style="width:8%; text-align:center;">QTY ORDER<br>(UNIT)</th>
+      <th style="width:13%; text-align:center;">PRICE / UNIT</th>
+      <th style="width:8%; text-align:center;">DISC (%)</th>
+      <th style="width:11%; text-align:center;">DISC AMOUNT</th>
+      <th style="width:13%; text-align:center;">AMOUNT</th>
+      <th style="width:12%; text-align:center;">REMARKS</th>
     </tr>
   </thead>
   <tbody>
-    @php 
+    @php
         $no = 1;
-        $subtotal = 0;
     @endphp
 
-    @foreach($service->items_offer as $group)
-        @php 
-            $serviceGroup = \App\Models\ServiceGroup::find($group['service_group_id']);
+    @foreach($items as $group)
+        @php
+            $serviceGroup = \App\Models\ServiceGroup::find($group['service_group_id'] ?? null);
             $groupName = $serviceGroup?->name ?? '-';
-            $groupTotal = 0;
+            $groupTotals = QuotationPricing::calcGroup($group);
             $remarks = $service->notes;
         @endphp
 
         <tr>
-            <td style="text-align:center;">{{ $no++ }}</td>
-            <td style="text-align:left;">
+            <td style="text-align:center; vertical-align:top;">{{ $no++ }}</td>
+            <td style="text-align:left; vertical-align:top;">
                 <strong>{{ strtoupper($groupName) }}</strong><br><br>
 
-                @foreach($group['items'] as $itemData)
+                @foreach(($group['items'] ?? []) as $itemData)
                     @php
-                        $item = \App\Models\Item::find($itemData['item_id']);
+                        $item = \App\Models\Item::find($itemData['item_id'] ?? null);
                         $itemName = $item?->name ?? '-';
                     @endphp
                     {{ $itemName }} <br>
@@ -156,76 +172,102 @@
             </td>
 
             <td style="text-align:center; vertical-align:top;">
-                <br><br><br>
-                @foreach($group['items'] as $itemData)
+                <br><br>
+                @foreach(($group['items'] ?? []) as $itemData)
                     {{ $itemData['quantity'] ?? '-' }} <br>
                 @endforeach
             </td>
 
             <td style="vertical-align:top;">
-                <br><br><br>
-                @foreach($group['items'] as $itemData)
+                <br><br>
+                @foreach(($group['items'] ?? []) as $itemData)
                     <div style="display:flex; justify-content:space-between;">
                         <span>Rp</span>
-                        <span>{{ number_format($itemData['sales_price'], 0, ',', '.') }}</span>
+                        <span>{{ number_format((float) ($itemData['sales_price'] ?? 0), 2, ',', '.') }}</span>
+                    </div>
+                @endforeach
+            </td>
+
+            <td style="text-align:center; vertical-align:top;">
+                <br><br>
+                @foreach(($group['items'] ?? []) as $itemData)
+                    {{ rtrim(rtrim(number_format((float) ($itemData['discount_percent'] ?? 0), 2, ',', '.'), '0'), ',') }}%<br>
+                @endforeach
+            </td>
+
+            <td style="vertical-align:top;">
+                <br><br>
+                @foreach(($group['items'] ?? []) as $itemData)
+                    @php $line = QuotationPricing::calcLine($itemData); @endphp
+                    <div style="display:flex; justify-content:space-between;">
+                        <span>Rp</span>
+                        <span>{{ number_format($line['discount'], 2, ',', '.') }}</span>
                     </div>
                 @endforeach
             </td>
 
             <td style="vertical-align:top;">
-                <br><br><br>
-                @foreach($group['items'] as $itemData)
-                    @php 
-                        $amount = $itemData['sales_price'] * $itemData['quantity'];
-                        $groupTotal += $amount;
-                        $subtotal += $amount;
-                    @endphp
+                <br><br>
+                @foreach(($group['items'] ?? []) as $itemData)
+                    @php $line = QuotationPricing::calcLine($itemData); @endphp
                     <div style="display:flex; justify-content:space-between;">
                         <span>Rp</span>
-                        <span>{{ number_format($amount, 0, ',', '.') }}</span>
+                        <span>{{ number_format($line['subtotal'], 2, ',', '.') }}</span>
                     </div>
                 @endforeach
                 <hr style="margin: 0px 0;">
-                <div style="display:flex; justify-content:space-between;font-weight:bold;">
-                        <span>Rp</span>
-                        <span>{{ number_format($groupTotal, 0, ',', '.') }}</span>
-                    </div>
-                <!-- TOTAL PER GROUP -->
-               
-             
+                <div style="display:flex; justify-content:space-between; font-weight:bold;">
+                    <span>Rp</span>
+                    <span>{{ number_format($groupTotals['subtotal'], 2, ',', '.') }}</span>
+                </div>
             </td>
 
             <td style="vertical-align:top;">{{ $remarks }}</td>
         </tr>
     @endforeach
 
-    <!-- Footer subtotal -->
+    <!-- Summary footer -->
     <tr>
-      <td colspan="4" style="text-align:right;"><strong>Sub Total</strong></td>
+      <td colspan="6" style="text-align:right;"><strong>Total Diskon</strong></td>
       <td>
         <div style="display:flex; justify-content:space-between;">
           <span>Rp</span>
-          <span>{{ number_format($subtotal, 0, ',', '.') }}</span>
+          <span>{{ number_format($totals['discount'], 2, ',', '.') }}</span>
         </div>
       </td>
       <td></td>
     </tr>
     <tr>
-      <td colspan="4" style="text-align:right;"><strong>PPN 11%</strong></td>
+      <td colspan="6" style="text-align:right;"><strong>Sub Total (DPP)</strong></td>
       <td>
         <div style="display:flex; justify-content:space-between;">
           <span>Rp</span>
-          <span>{{ number_format($subtotal * 0.11, 0, ',', '.') }}</span>
+          <span>{{ number_format($totals['subtotal'], 2, ',', '.') }}</span>
         </div>
       </td>
       <td></td>
     </tr>
     <tr>
-      <td colspan="4" style="text-align:right;"><strong>Total</strong></td>
+      <td colspan="6" style="text-align:right;">
+        <strong>
+          PPN {{ $ppnPercentLabel }}%
+          <br><small>({{ QuotationPricing::ppnTypeLabel($service->ppn_type) }})</small>
+        </strong>
+      </td>
       <td>
         <div style="display:flex; justify-content:space-between;">
           <span>Rp</span>
-          <strong>{{ number_format($subtotal * 1.11, 0, ',', '.') }}</strong>
+          <span>{{ number_format($totals['ppn'], 2, ',', '.') }}</span>
+        </div>
+      </td>
+      <td></td>
+    </tr>
+    <tr>
+      <td colspan="6" style="text-align:right;"><strong>Total</strong></td>
+      <td>
+        <div style="display:flex; justify-content:space-between;">
+          <span>Rp</span>
+          <strong>{{ number_format($totals['total'], 2, ',', '.') }}</strong>
         </div>
       </td>
       <td></td>
@@ -233,7 +275,7 @@
   </tbody>
 </table>
 
-   
+
 
    <!-- Terms & Conditions -->
 <p><strong>Terms & Conditions:</strong></p>
@@ -250,10 +292,6 @@
     <div style="width: 100px;"><strong>Validity</strong></div>
     <div>: {{ $service->validity_terms }}</div>
   </div>
-  <!-- <div style="display: flex;">
-    <div style="width: 100px;"><strong>Note</strong></div>
-    <div>: Harga di atas belum termasuk PPN 11%</div>
-  </div> -->
 </div>
 
 
