@@ -309,7 +309,7 @@
     <div>: {{ $service->validity_terms }}</div>
   </div>
 </div>
-<p>Balaraja, {{ \Carbon\Carbon::parse($service->created_at_offer)->translatedFormat('d F Y') }}</p>
+<p>Karawang, {{ \Carbon\Carbon::parse($service->created_at_offer)->translatedFormat('d F Y') }}</p>
 
 <div style="display:flex; justify-content:space-between; margin-top:10px; text-align:center;">
   <div>
