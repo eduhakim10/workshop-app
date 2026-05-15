@@ -372,6 +372,10 @@ class QuotationsResource extends Resource
                 FormFields::applyRupiahMask(TextInput::make('amount_offer'))
                     ->label('Amount Offer')
                     ->required()
+                    ->reactive()
+                    ->afterStateUpdated(function ($state, callable $set) {
+                        $set('amount_offer_revision', $state);
+                    })
                     ->helperText('Otomatis mengikuti Total Price. Bisa di-override manual.')
                     ->columnSpan(1),
 
@@ -419,6 +423,9 @@ class QuotationsResource extends Resource
 
         // Auto-fill amount_offer mengikuti total_price (point #3)
         $set('amount_offer', number_format($totals['total'], 2, ',', '.'));
+
+        // Auto-fill amount_offer_revision sama dengan amount_offer
+        $set('amount_offer_revision', number_format($totals['total'], 2, ',', '.'));
     }
 
     public static function table(Table $table): Table

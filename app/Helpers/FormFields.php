@@ -38,7 +38,7 @@ class FormFields
             ->mask(RawJs::make("\$money(\$input, ',', '.', 2)"))
             // hapus pemisah ribuan, lalu ganti koma desimal jadi titik saat dehydrate
             ->stripCharacters('.')
-            ->rules(['nullable', 'numeric'])
+            ->rules(['nullable', 'regex:/^\d+([,]\d{1,2})?$/'])
             ->dehydrateStateUsing(fn ($state) => self::parseRupiah($state))
             ->formatStateUsing(fn ($state) => self::formatRupiah($state));
     }
