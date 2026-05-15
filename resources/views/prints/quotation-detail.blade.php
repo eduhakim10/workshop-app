@@ -90,11 +90,9 @@
               <strong>Attn</strong><br />
               <strong>From</strong><br />
               <strong>SR No</strong><br />
-              <strong>License Plate</strong><br />
-              <strong>Klasifikasi</strong>
+              <strong>License Plate</strong>
             </div>
             <div>
-              :<br />
               :<br />
               :<br />
               :<br />
@@ -108,8 +106,7 @@
               {{ $service->attn_quotation ?? '-' }}<br />
               PT Mitra Toyotaka Indonesia<br />
               {{ $service->serviceRequest?->sr_number ?? '-' }}<br />
-              {{ $service->vehicle?->license_plate ?? '-' }}<br />
-              {{ $service->damage_classification ?? '-' }}
+              {{ $service->vehicle?->license_plate ?? '-' }}
             </div>
           </div>
         </td>
@@ -227,16 +224,6 @@
     @endforeach
 
     <!-- Summary footer -->
-    <tr>
-      <td colspan="6" style="text-align:right;"><strong>Total Diskon</strong></td>
-      <td>
-        <div style="display:flex; justify-content:space-between;">
-          <span>Rp</span>
-          <span>{{ number_format($totals['discount'], 2, ',', '.') }}</span>
-        </div>
-      </td>
-      <td></td>
-    </tr>
     <tr>
       <td colspan="6" style="text-align:right;"><strong>Sub Total (DPP)</strong></td>
       <td>
