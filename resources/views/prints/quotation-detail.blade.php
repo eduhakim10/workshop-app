@@ -126,17 +126,21 @@
     );
     $ppnPercentLabel = rtrim(rtrim(number_format((float) ($service->ppn_percent ?? 0), 2, ',', '.'), '0'), ',');
     if ($ppnPercentLabel === '') { $ppnPercentLabel = '0'; }
+    $hasDiscount = collect($items)->flatMap(fn($g) => $g['items'] ?? [])->contains(fn($i) => ((float) ($i['discount_percent'] ?? 0)) > 0);
+    $footerColspan = $hasDiscount ? 6 : 4;
 @endphp
 
     <table border="1" cellpadding="6" cellspacing="0" width="100%" style="border-collapse: collapse; font-family: Arial, sans-serif; font-size: 12px;">
   <thead>
     <tr>
       <th style="width:5%; text-align:center;">NO</th>
-      <th style="width:30%; text-align:center;">ITEM</th>
+      <th style="width:{{ $hasDiscount ? '30' : '41' }}%; text-align:center;">ITEM</th>
       <th style="width:8%; text-align:center;">QTY ORDER<br>(UNIT)</th>
       <th style="width:13%; text-align:center;">PRICE / UNIT</th>
+      @if($hasDiscount)
       <th style="width:8%; text-align:center;">DISC (%)</th>
       <th style="width:11%; text-align:center;">DISC AMOUNT</th>
+      @endif
       <th style="width:13%; text-align:center;">AMOUNT</th>
       <th style="width:12%; text-align:center;">REMARKS</th>
     </tr>
@@ -185,6 +189,7 @@
                 @endforeach
             </td>
 
+            @if($hasDiscount)
             <td style="text-align:center; vertical-align:top;">
                 <br><br>
                 @foreach(($group['items'] ?? []) as $itemData)
@@ -202,6 +207,7 @@
                     </div>
                 @endforeach
             </td>
+            @endif
 
             <td style="vertical-align:top;">
                 <br><br>
@@ -225,7 +231,7 @@
 
     <!-- Summary footer -->
     <tr>
-      <td colspan="6" style="text-align:right;"><strong>Sub Total (DPP)</strong></td>
+      <td colspan="{{ $footerColspan }}" style="text-align:right;"><strong>Sub Total (DPP)</strong></td>
       <td>
         <div style="display:flex; justify-content:space-between;">
           <span>Rp</span>
@@ -235,7 +241,7 @@
       <td></td>
     </tr>
     <tr>
-      <td colspan="6" style="text-align:right;">
+      <td colspan="{{ $footerColspan }}" style="text-align:right;">
         <strong>
           PPN {{ $ppnPercentLabel }}%
           <br><small>({{ QuotationPricing::ppnTypeLabel($service->ppn_type) }})</small>
@@ -250,7 +256,7 @@
       <td></td>
     </tr>
     <tr>
-      <td colspan="6" style="text-align:right;"><strong>Total</strong></td>
+      <td colspan="{{ $footerColspan }}" style="text-align:right;"><strong>Total</strong></td>
       <td>
         <div style="display:flex; justify-content:space-between;">
           <span>Rp</span>
