@@ -40,6 +40,7 @@ class EditQuotations extends EditRecord
                     $quotation->stage = 2;
                     $quotation->updated_at_offer = now();
                     $quotation->updated_at = now();
+                    $quotation->created_at = now();
 
                     $itemsOffer = $quotation->items_offer;
 
