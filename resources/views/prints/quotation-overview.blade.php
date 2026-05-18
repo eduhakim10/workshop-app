@@ -185,63 +185,54 @@
             $groupName = $serviceGroup?->name ?? '-';
             $groupQty = $group['qty'] ?? 1;
             $remarks = $service->notes;
+            $groupItems = $group['items'] ?? [];
+            $itemCount = count($groupItems);
         @endphp
+
+        {{-- Group header row: NO & QTY span all item rows --}}
         <tr>
-            <td style="text-align:center; vertical-align:top;">{{ $no++ }}</td>
-            <td style="text-align: left; vertical-align:top;">
-                <strong>{{ $groupName }}</strong><br><br>
-                <strong>REPAIR :</strong><br>
-                @foreach(($group['items'] ?? []) as $item)
-                    @php
-                        $category = \App\Models\CategoryItem::find($item['category_item_id'] ?? null);
-                    @endphp
-                    ~ {{ $category?->name ?? '-' }} <br>
-                @endforeach
+            <td style="text-align:center; vertical-align:middle;" rowspan="{{ $itemCount + 1 }}">{{ $no++ }}</td>
+            <td style="text-align:left; font-weight:bold;">
+                {{ $groupName }}<br><strong>REPAIR :</strong>
             </td>
-            <td style="text-align:center; vertical-align:top;">{{ $groupQty }}</td>
-            <td style="vertical-align:top;">
-                <br><br>
-                @foreach(($group['items'] ?? []) as $item)
-                <div style="display:flex; justify-content:space-between;">
-                  <span style="text-align:left;">Rp</span>
-                  <span style="text-align:right;">{{ number_format((float) ($item['sales_price'] ?? 0), 2, ',', '.') }}</span>
-                </div>
-                @endforeach
-            </td>
-            @if($hasDiscount)
-            <td style="text-align:center; vertical-align:top;">
-                <br><br>
-                @foreach(($group['items'] ?? []) as $item)
-                    {{ rtrim(rtrim(number_format((float) ($item['discount_percent'] ?? 0), 2, ',', '.'), '0'), ',') }}%<br>
-                @endforeach
-            </td>
-            <td style="vertical-align:top;">
-                <br><br>
-                @foreach(($group['items'] ?? []) as $item)
-                    @php
-                        $line = QuotationPricing::calcLine($item);
-                    @endphp
-                    <div style="display:flex; justify-content:space-between;">
-                      <span style="text-align:left;">Rp</span>
-                      <span style="text-align:right;">{{ number_format($line['discount'], 2, ',', '.') }}</span>
-                    </div>
-                @endforeach
-            </td>
-            @endif
-            <td style="vertical-align:top;">
-                <br><br>
-                @foreach(($group['items'] ?? []) as $item)
-                    @php
-                        $line = QuotationPricing::calcLine($item);
-                    @endphp
-                    <div style="display:flex; justify-content:space-between;">
-                      <span style="text-align:left;">Rp</span>
-                      <span style="text-align:right;">{{ number_format($line['subtotal'], 2, ',', '.') }}</span>
-                    </div>
-                @endforeach
-            </td>
-            <td style="vertical-align:top;">{{ $remarks }}</td>
+            <td style="text-align:center; vertical-align:middle;" rowspan="{{ $itemCount + 1 }}">{{ $groupQty }}</td>
+            <td colspan="{{ $hasDiscount ? 4 : 2 }}"></td>
+            <td>{{ $remarks }}</td>
         </tr>
+
+        {{-- One row per item --}}
+        @foreach($groupItems as $item)
+            @php
+                $category = \App\Models\CategoryItem::find($item['category_item_id'] ?? null);
+                $line = QuotationPricing::calcLine($item);
+            @endphp
+            <tr>
+                <td style="text-align:left;">~ {{ $category?->name ?? '-' }}</td>
+                {{-- QTY is rowspanned above, skip --}}
+                <td>
+                    <div style="display:flex; justify-content:space-between;">
+                        <span>Rp</span>
+                        <span>{{ number_format((float) ($item['sales_price'] ?? 0), 2, ',', '.') }}</span>
+                    </div>
+                </td>
+                @if($hasDiscount)
+                <td style="text-align:center;">{{ rtrim(rtrim(number_format((float) ($item['discount_percent'] ?? 0), 2, ',', '.'), '0'), ',') }}%</td>
+                <td>
+                    <div style="display:flex; justify-content:space-between;">
+                        <span>Rp</span>
+                        <span>{{ number_format($line['discount'], 2, ',', '.') }}</span>
+                    </div>
+                </td>
+                @endif
+                <td>
+                    <div style="display:flex; justify-content:space-between;">
+                        <span>Rp</span>
+                        <span>{{ number_format($line['subtotal'], 2, ',', '.') }}</span>
+                    </div>
+                </td>
+                <td></td>
+            </tr>
+        @endforeach
     @endforeach
 
     <!-- Footer summary -->

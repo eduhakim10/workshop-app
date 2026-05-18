@@ -156,77 +156,61 @@
             $groupName = $serviceGroup?->name ?? '-';
             $groupTotals = QuotationPricing::calcGroup($group);
             $remarks = $service->notes;
+            $groupItems = $group['items'] ?? [];
+            $itemCount = count($groupItems);
         @endphp
 
+        {{-- Group header row --}}
         <tr>
-            <td style="text-align:center; vertical-align:top;">{{ $no++ }}</td>
-            <td style="text-align:left; vertical-align:top;">
-                <strong>{{ strtoupper($groupName) }}</strong><br><br>
-
-                @foreach(($group['items'] ?? []) as $itemData)
-                    @php
-                        $item = \App\Models\Item::find($itemData['item_id'] ?? null);
-                        $itemName = $item?->name ?? '-';
-                    @endphp
-                    {{ $itemName }} <br>
-                @endforeach
+            <td style="text-align:center; vertical-align:middle;" rowspan="{{ $itemCount + 1 }}">{{ $no++ }}</td>
+            <td colspan="{{ $hasDiscount ? 6 : 4 }}" style="text-align:left; font-weight:bold;">
+                {{ strtoupper($groupName) }}
             </td>
+            <td></td>
+        </tr>
 
-            <td style="text-align:center; vertical-align:top;">
-                <br><br>
-                @foreach(($group['items'] ?? []) as $itemData)
-                    {{ $itemData['quantity'] ?? '-' }} <br>
-                @endforeach
-            </td>
-
-            <td style="vertical-align:top;">
-                <br><br>
-                @foreach(($group['items'] ?? []) as $itemData)
+        {{-- One row per item --}}
+        @foreach($groupItems as $idx => $itemData)
+            @php
+                $item = \App\Models\Item::find($itemData['item_id'] ?? null);
+                $itemName = $item?->name ?? '-';
+                $line = QuotationPricing::calcLine($itemData);
+                $isLast = ($idx === $itemCount - 1);
+            @endphp
+            <tr>
+                <td style="text-align:left;">{{ $itemName }}</td>
+                <td style="text-align:center;">{{ $itemData['quantity'] ?? '-' }}</td>
+                <td>
                     <div style="display:flex; justify-content:space-between;">
                         <span>Rp</span>
                         <span>{{ number_format((float) ($itemData['sales_price'] ?? 0), 2, ',', '.') }}</span>
                     </div>
-                @endforeach
-            </td>
-
-            @if($hasDiscount)
-            <td style="text-align:center; vertical-align:top;">
-                <br><br>
-                @foreach(($group['items'] ?? []) as $itemData)
-                    {{ rtrim(rtrim(number_format((float) ($itemData['discount_percent'] ?? 0), 2, ',', '.'), '0'), ',') }}%<br>
-                @endforeach
-            </td>
-
-            <td style="vertical-align:top;">
-                <br><br>
-                @foreach(($group['items'] ?? []) as $itemData)
-                    @php $line = QuotationPricing::calcLine($itemData); @endphp
+                </td>
+                @if($hasDiscount)
+                <td style="text-align:center;">{{ rtrim(rtrim(number_format((float) ($itemData['discount_percent'] ?? 0), 2, ',', '.'), '0'), ',') }}%</td>
+                <td>
                     <div style="display:flex; justify-content:space-between;">
                         <span>Rp</span>
                         <span>{{ number_format($line['discount'], 2, ',', '.') }}</span>
                     </div>
-                @endforeach
-            </td>
-            @endif
-
-            <td style="vertical-align:top;">
-                <br><br>
-                @foreach(($group['items'] ?? []) as $itemData)
-                    @php $line = QuotationPricing::calcLine($itemData); @endphp
+                </td>
+                @endif
+                <td>
                     <div style="display:flex; justify-content:space-between;">
                         <span>Rp</span>
                         <span>{{ number_format($line['subtotal'], 2, ',', '.') }}</span>
                     </div>
-                @endforeach
-                <hr style="margin: 0px 0;">
-                <div style="display:flex; justify-content:space-between; font-weight:bold;">
-                    <span>Rp</span>
-                    <span>{{ number_format($groupTotals['subtotal'], 2, ',', '.') }}</span>
-                </div>
-            </td>
-
-            <td style="vertical-align:top;">{{ $remarks }}</td>
-        </tr>
+                    @if($isLast)
+                    <hr style="margin: 4px 0;">
+                    <div style="display:flex; justify-content:space-between; font-weight:bold;">
+                        <span>Rp</span>
+                        <span>{{ number_format($groupTotals['subtotal'], 2, ',', '.') }}</span>
+                    </div>
+                    @endif
+                </td>
+                <td>{{ $isLast ? $remarks : '' }}</td>
+            </tr>
+        @endforeach
     @endforeach
 
     <!-- Summary footer -->
