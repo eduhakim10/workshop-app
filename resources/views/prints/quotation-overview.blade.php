@@ -165,10 +165,10 @@
       <th style="width:5%; text-align:center;">NO</th>
       <th style="width:{{ $hasDiscount ? '32' : '43' }}%; text-align:center;">ITEM</th>
       <th style="width:8%; text-align:center;">QTY ORDER<br>(UNIT)</th>
-      <th style="width:13%; text-align:center;">PRICE / UNIT</th>
+      <th style="width:13%; text-align:center; border-right: 1px solid #000;">PRICE / UNIT</th>
       @if($hasDiscount)
-      <th style="width:8%; text-align:center;">DISC (%)</th>
-      <th style="width:11%; text-align:center;">DISC AMOUNT</th>
+      <th style="width:8%; text-align:center; border-right: 1px solid #000;">DISC (%)</th>
+      <th style="width:11%; text-align:center; border-right: 1px solid #000;">DISC AMOUNT</th>
       @endif
       <th style="width:13%; text-align:center;">AMOUNT</th>
       <th style="width:10%; text-align:center;">REMARKS</th>
@@ -192,45 +192,50 @@
         {{-- Group header row: NO & QTY span all item rows --}}
         <tr>
             <td style="text-align:center; vertical-align:middle;" rowspan="{{ $itemCount + 1 }}">{{ $no++ }}</td>
-            <td style="text-align:left; font-weight:bold;">
-                {{ $groupName }}<br><strong>REPAIR :</strong>
-            </td>
-            <td style="text-align:center; vertical-align:middle;" rowspan="{{ $itemCount + 1 }}">{{ $groupQty }}</td>
-            <td colspan="{{ $hasDiscount ? 4 : 2 }}"></td>
-            <td>{{ $remarks }}</td>
+            <td style="text-align:left; font-weight:bold; border-bottom:hidden;">{{ $groupName }}<br><strong>REPAIR :</strong></td>
+            <td style="text-align:center; vertical-align:top;" rowspan="{{ $itemCount + 1 }}">{{ $groupQty }}</td>
+            <td style="border-bottom:hidden;"></td>
+            @if($hasDiscount)
+            <td style="border-bottom:hidden;"></td>
+            <td style="border-bottom:hidden;"></td>
+            @endif
+            <td style="border-bottom:hidden;"></td>
+            <td style="border-bottom:hidden; vertical-align:top;">{{ $remarks }}</td>
         </tr>
 
         {{-- One row per item --}}
-        @foreach($groupItems as $item)
+        @foreach($groupItems as $idx => $item)
             @php
                 $category = \App\Models\CategoryItem::find($item['category_item_id'] ?? null);
                 $line = QuotationPricing::calcLine($item);
+                $isLast = ($idx === $itemCount - 1);
+                $nb = $isLast ? '' : 'border-bottom:hidden;';
             @endphp
             <tr>
-                <td style="text-align:left;">~ {{ $category?->name ?? '-' }}</td>
+                <td style="text-align:left; {{ $nb }}">~ {{ $category?->name ?? '-' }}</td>
                 {{-- QTY is rowspanned above, skip --}}
-                <td>
+                <td style="border: 1px solid #000; {{ $isLast ? '' : 'border-bottom:hidden;' }}">
                     <div style="display:flex; justify-content:space-between;">
                         <span>Rp</span>
                         <span>{{ number_format((float) ($item['sales_price'] ?? 0), 2, ',', '.') }}</span>
                     </div>
                 </td>
                 @if($hasDiscount)
-                <td style="text-align:center;">{{ rtrim(rtrim(number_format((float) ($item['discount_percent'] ?? 0), 2, ',', '.'), '0'), ',') }}%</td>
-                <td>
+                <td style="text-align:center; border: 1px solid #000; {{ $isLast ? '' : 'border-bottom:hidden;' }}">{{ rtrim(rtrim(number_format((float) ($item['discount_percent'] ?? 0), 2, ',', '.'), '0'), ',') }}%</td>
+                <td style="border: 1px solid #000; {{ $isLast ? '' : 'border-bottom:hidden;' }}">
                     <div style="display:flex; justify-content:space-between;">
                         <span>Rp</span>
                         <span>{{ number_format($line['discount'], 2, ',', '.') }}</span>
                     </div>
                 </td>
                 @endif
-                <td>
+                <td style="{{ $nb }}">
                     <div style="display:flex; justify-content:space-between;">
                         <span>Rp</span>
                         <span>{{ number_format($line['subtotal'], 2, ',', '.') }}</span>
                     </div>
                 </td>
-                <td></td>
+                <td style="{{ $nb }}"></td>
             </tr>
         @endforeach
     @endforeach
