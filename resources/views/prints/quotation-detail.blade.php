@@ -83,32 +83,38 @@
           Karawang, Jawa Barat
         </td>
         <td class="no-border text-left">
-          <div style="display:flex; align-items:flex-start;">
-            <div style="width:120px;">
-              <strong>Quotation No</strong><br />
-              <strong>Date</strong><br />
-              <strong>Attn</strong><br />
-              <strong>From</strong><br />
-              <strong>SR No</strong><br />
-              <strong>License Plate</strong>
-            </div>
-            <div>
-              :<br />
-              :<br />
-              :<br />
-              :<br />
-              :<br />
-              :
-            </div>
-            <div style="flex:1; padding-left:2px;">
-              {{ $service->offer_number ?? '-' }}<br />
-              {{ \Carbon\Carbon::parse($service->created_at)->format('d/m/Y') }}<br />
-              {{ $service->attn_quotation ?? '-' }}<br />
-              PT Mitra Toyotaka Indonesia<br />
-              {{ $service->serviceRequest?->sr_number ?? '-' }}<br />
-              {{ $service->vehicle?->license_plate ?? '-' }}
-            </div>
-          </div>
+          <table style="border:none; border-collapse:collapse; text-align:left;">
+            <tr>
+              <td style="border:none; padding:1px 0; text-align:left;"><strong>Quotation No</strong></td>
+              <td style="border:none; padding:1px 4px; text-align:left;">:</td>
+              <td style="border:none; padding:1px 0; text-align:left;">{{ $service->offer_number ?? '-' }}</td>
+            </tr>
+            <tr>
+              <td style="border:none; padding:1px 0; text-align:left;"><strong>Date</strong></td>
+              <td style="border:none; padding:1px 4px; text-align:left;">:</td>
+              <td style="border:none; padding:1px 0; text-align:left;">{{ \Carbon\Carbon::parse($service->created_at)->format('d/m/Y') }}</td>
+            </tr>
+            <tr>
+              <td style="border:none; padding:1px 0; text-align:left;"><strong>Attn</strong></td>
+              <td style="border:none; padding:1px 4px; text-align:left;">:</td>
+              <td style="border:none; padding:1px 0; text-align:left;">{{ $service->attn_quotation ?? '-' }}</td>
+            </tr>
+            <tr>
+              <td style="border:none; padding:1px 0; text-align:left;"><strong>From</strong></td>
+              <td style="border:none; padding:1px 4px; text-align:left;">:</td>
+              <td style="border:none; padding:1px 0; text-align:left;">PT Mitra Toyotaka Indonesia</td>
+            </tr>
+            <tr>
+              <td style="border:none; padding:1px 0; text-align:left;"><strong>SR No</strong></td>
+              <td style="border:none; padding:1px 4px; text-align:left;">:</td>
+              <td style="border:none; padding:1px 0; text-align:left;">{{ $service->serviceRequest?->sr_number ?? '-' }}</td>
+            </tr>
+            <tr>
+              <td style="border:none; padding:1px 0; text-align:left;"><strong>License Plate</strong></td>
+              <td style="border:none; padding:1px 4px; text-align:left;">:</td>
+              <td style="border:none; padding:1px 0; text-align:left;">{{ $service->vehicle?->license_plate ?? '-' }}</td>
+            </tr>
+          </table>
         </td>
       </tr>
     </table>
@@ -163,7 +169,14 @@
         {{-- Group header row --}}
         <tr>
             <td style="text-align:center; vertical-align:middle;" rowspan="{{ $itemCount + 1 }}">{{ $no++ }}</td>
-            <td colspan="{{ $hasDiscount ? 6 : 4 }}" style="text-align:left; font-weight:bold; border-bottom:hidden;"><strong>{{ strtoupper($groupName) }}</strong></td>
+            <td style="text-align:left; font-weight:bold; border-bottom:hidden;"><strong>{{ strtoupper($groupName) }}</strong></td>
+            <td style="border-bottom:hidden; border: 1px solid #000;"></td>{{-- QTY --}}
+            <td style="border-bottom:hidden; border: 1px solid #000;"></td>{{-- PRICE/UNIT --}}
+            @if($hasDiscount)
+            <td style="border-bottom:hidden; border: 1px solid #000;"></td>{{-- DISC% --}}
+            <td style="border-bottom:hidden; border: 1px solid #000;"></td>{{-- DISC AMOUNT --}}
+            @endif
+            <td style="border-bottom:hidden; border: 1px solid #000;"></td>{{-- AMOUNT --}}
             <td style="border-bottom:hidden; vertical-align:top;">{{ $remarks }}</td>
         </tr>
 
@@ -174,27 +187,29 @@
                 $itemName = $item?->name ?? '-';
                 $line = QuotationPricing::calcLine($itemData);
                 $isLast = ($idx === $itemCount - 1);
+                $isFirst = ($idx === 0);
                 $nb = $isLast ? '' : 'border-bottom:hidden;';
+                $nt = $isFirst ? 'border-top:hidden;' : '';
             @endphp
             <tr>
-                <td style="text-align:left; {{ $nb }}">{{ $itemName }}</td>
-                <td style="text-align:center; {{ $nb }}">{{ $itemData['quantity'] ?? '-' }}</td>
-                <td style="{{ $nb }}">
+                <td style="text-align:left; vertical-align:top; {{ $nb }} {{ $nt }}">{{ $itemName }}</td>
+                <td style="text-align:center; vertical-align:top; {{ $nb }} {{ $nt }}">{{ $itemData['quantity'] ?? '-' }}</td>
+                <td style="vertical-align:top; {{ $nb }} {{ $nt }}">
                     <div style="display:flex; justify-content:space-between;">
                         <span>Rp</span>
                         <span>{{ number_format((float) ($itemData['sales_price'] ?? 0), 2, ',', '.') }}</span>
                     </div>
                 </td>
                 @if($hasDiscount)
-                <td style="text-align:center; {{ $nb }}">{{ rtrim(rtrim(number_format((float) ($itemData['discount_percent'] ?? 0), 2, ',', '.'), '0'), ',') }}%</td>
-                <td style="{{ $nb }}">
+                <td style="text-align:center; vertical-align:top; {{ $nb }} {{ $nt }}">{{ rtrim(rtrim(number_format((float) ($itemData['discount_percent'] ?? 0), 2, ',', '.'), '0'), ',') }}%</td>
+                <td style="vertical-align:top; {{ $nb }} {{ $nt }}">
                     <div style="display:flex; justify-content:space-between;">
                         <span>Rp</span>
                         <span>{{ number_format($line['discount'], 2, ',', '.') }}</span>
                     </div>
                 </td>
                 @endif
-                <td style="{{ $nb }}">
+                <td style="vertical-align:top; {{ $nb }} {{ $nt }}">
                     <div style="display:flex; justify-content:space-between;">
                         <span>Rp</span>
                         <span>{{ number_format($line['subtotal'], 2, ',', '.') }}</span>
@@ -207,7 +222,7 @@
                     </div>
                     @endif
                 </td>
-                <td style="{{ $nb }}"></td>
+                <td style="vertical-align:top; {{ $nb }} {{ $nt }}"></td>
             </tr>
         @endforeach
     @endforeach
