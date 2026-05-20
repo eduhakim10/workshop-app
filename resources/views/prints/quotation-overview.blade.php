@@ -92,32 +92,38 @@
          {{ $service->customer->address }}
         </td>
         <td class="no-border text-left">
-          <div style="display:flex; align-items:flex-start;">
-            <div style="width:120px;">
-              <strong>Quotation No</strong><br />
-              <strong>Date</strong><br />
-              <strong>Attn</strong><br />
-              <strong>From</strong><br />
-              <strong>SR No</strong><br />
-              <strong>License Plate</strong>
-            </div>
-            <div>
-              :<br />
-              :<br />
-              :<br />
-              :<br />
-              :<br />
-              :
-            </div>
-            <div style="flex:1; padding-left:2px;">
-              {{ $service->offer_number }}<br />
-              {{ \Carbon\Carbon::parse($service->created_at)->format('d/m/Y') }}<br />
-              {{ $service->attn_quotation ?? '-' }}<br />
-              PT Mitra Toyotaka Indonesia<br />
-              {{ $service->serviceRequest?->sr_number ?? '-' }}<br />
-              {{ $service->vehicle?->license_plate ?? '-' }}
-            </div>
-          </div>
+          <table style="border:none; border-collapse:collapse; text-align:left;">
+            <tr>
+              <td style="border:none; padding:1px 0; text-align:left;"><strong>Quotation No</strong></td>
+              <td style="border:none; padding:1px 4px; text-align:left;">:</td>
+              <td style="border:none; padding:1px 0; text-align:left;">{{ $service->offer_number ?? '-' }}</td>
+            </tr>
+            <tr>
+              <td style="border:none; padding:1px 0; text-align:left;"><strong>Date</strong></td>
+              <td style="border:none; padding:1px 4px; text-align:left;">:</td>
+              <td style="border:none; padding:1px 0; text-align:left;">{{ \Carbon\Carbon::parse($service->created_at)->format('d/m/Y') }}</td>
+            </tr>
+            <tr>
+              <td style="border:none; padding:1px 0; text-align:left;"><strong>Attn</strong></td>
+              <td style="border:none; padding:1px 4px; text-align:left;">:</td>
+              <td style="border:none; padding:1px 0; text-align:left;">{{ $service->attn_quotation ?? '-' }}</td>
+            </tr>
+            <tr>
+              <td style="border:none; padding:1px 0; text-align:left;"><strong>From</strong></td>
+              <td style="border:none; padding:1px 4px; text-align:left;">:</td>
+              <td style="border:none; padding:1px 0; text-align:left;">PT Mitra Toyotaka Indonesia</td>
+            </tr>
+            <tr>
+              <td style="border:none; padding:1px 0; text-align:left;"><strong>SR No</strong></td>
+              <td style="border:none; padding:1px 4px; text-align:left;">:</td>
+              <td style="border:none; padding:1px 0; text-align:left;">{{ $service->serviceRequest?->sr_number ?? '-' }}</td>
+            </tr>
+            <tr>
+              <td style="border:none; padding:1px 0; text-align:left;"><strong>License Plate</strong></td>
+              <td style="border:none; padding:1px 4px; text-align:left;">:</td>
+              <td style="border:none; padding:1px 0; text-align:left;">{{ $service->vehicle?->license_plate ?? '-' }}</td>
+            </tr>
+          </table>
         </td>
       </tr>
     </table>
