@@ -223,7 +223,7 @@
                 <td style="border: 1px solid #000; {{ $isLast ? '' : 'border-bottom:hidden;' }}">
                     <div style="display:flex; justify-content:space-between;">
                         <span>Rp</span>
-                        <span>{{ number_format((float) ($item['sales_price'] ?? 0), 2, ',', '.') }}</span>
+                        <span>{{ number_format((float) ($item['sales_price'] ?? 0), 0, ',', '.') }}</span>
                     </div>
                 </td>
                 @if($hasDiscount)
@@ -231,14 +231,14 @@
                 <td style="border: 1px solid #000; {{ $isLast ? '' : 'border-bottom:hidden;' }}">
                     <div style="display:flex; justify-content:space-between;">
                         <span>Rp</span>
-                        <span>{{ number_format($line['discount'], 2, ',', '.') }}</span>
+                        <span>{{ number_format($line['discount'], 0, ',', '.') }}</span>
                     </div>
                 </td>
                 @endif
                 <td style="{{ $nb }}">
                     <div style="display:flex; justify-content:space-between;">
                         <span>Rp</span>
-                        <span>{{ number_format($line['subtotal'], 2, ',', '.') }}</span>
+                        <span>{{ number_format($line['subtotal'], 0, ',', '.') }}</span>
                     </div>
                 </td>
                 <td style="{{ $nb }}"></td>
@@ -252,7 +252,7 @@
       <td>
         <div style="display:flex; justify-content:space-between;">
           <span style="text-align:left;">Rp</span>
-          <span style="text-align:right;">{{ number_format($totals['subtotal'], 2, ',', '.') }}</span>
+          <span style="text-align:right;">{{ number_format($totals['subtotal'], 0, ',', '.') }}</span>
         </div>
       </td>
       <td></td>
@@ -267,7 +267,7 @@
       <td>
         <div style="display:flex; justify-content:space-between;">
           <span style="text-align:left;">Rp</span>
-          <span style="text-align:right;">{{ number_format($totals['ppn'], 2, ',', '.') }}</span>
+          <span style="text-align:right;">{{ number_format($totals['ppn'], 0, ',', '.') }}</span>
         </div>
       </td>
       <td></td>
@@ -277,7 +277,7 @@
       <td>
         <div style="display:flex; justify-content:space-between;">
           <span style="text-align:left;">Rp</span>
-          <span style="text-align:right;"><strong>{{ number_format($totals['total'], 2, ',', '.') }}</strong></span>
+          <span style="text-align:right;"><strong>{{ number_format($totals['total'], 0, ',', '.') }}</strong></span>
         </div>
       </td>
       <td></td>
