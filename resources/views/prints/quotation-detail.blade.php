@@ -85,33 +85,33 @@
         <td class="no-border text-left">
           <table style="border:none; border-collapse:collapse; text-align:left;">
             <tr>
-              <td style="border:none; padding:1px 0; text-align:left;"><strong>Quotation No</strong></td>
-              <td style="border:none; padding:1px 4px; text-align:left;">:</td>
+              <td style="border:none; padding:1px 0; text-align:left; white-space:nowrap;"><strong>Quotation No</strong></td>
+              <td style="border:none; padding:1px 4px; text-align:left; white-space:nowrap;">:</td>
               <td style="border:none; padding:1px 0; text-align:left;">{{ $service->offer_number ?? '-' }}</td>
             </tr>
             <tr>
-              <td style="border:none; padding:1px 0; text-align:left;"><strong>Date</strong></td>
-              <td style="border:none; padding:1px 4px; text-align:left;">:</td>
+              <td style="border:none; padding:1px 0; text-align:left; white-space:nowrap;"><strong>Date</strong></td>
+              <td style="border:none; padding:1px 4px; text-align:left; white-space:nowrap;">:</td>
               <td style="border:none; padding:1px 0; text-align:left;">{{ \Carbon\Carbon::parse($service->created_at)->format('d/m/Y') }}</td>
             </tr>
             <tr>
-              <td style="border:none; padding:1px 0; text-align:left;"><strong>Attn</strong></td>
-              <td style="border:none; padding:1px 4px; text-align:left;">:</td>
+              <td style="border:none; padding:1px 0; text-align:left; white-space:nowrap;"><strong>Attn</strong></td>
+              <td style="border:none; padding:1px 4px; text-align:left; white-space:nowrap;">:</td>
               <td style="border:none; padding:1px 0; text-align:left;">{{ $service->attn_quotation ?? '-' }}</td>
             </tr>
             <tr>
-              <td style="border:none; padding:1px 0; text-align:left;"><strong>From</strong></td>
-              <td style="border:none; padding:1px 4px; text-align:left;">:</td>
+              <td style="border:none; padding:1px 0; text-align:left; white-space:nowrap;"><strong>From</strong></td>
+              <td style="border:none; padding:1px 4px; text-align:left; white-space:nowrap;">:</td>
               <td style="border:none; padding:1px 0; text-align:left;">PT Mitra Toyotaka Indonesia</td>
             </tr>
             <tr>
-              <td style="border:none; padding:1px 0; text-align:left;"><strong>SR No</strong></td>
-              <td style="border:none; padding:1px 4px; text-align:left;">:</td>
+              <td style="border:none; padding:1px 0; text-align:left; white-space:nowrap;"><strong>SR No</strong></td>
+              <td style="border:none; padding:1px 4px; text-align:left; white-space:nowrap;">:</td>
               <td style="border:none; padding:1px 0; text-align:left;">{{ $service->serviceRequest?->sr_number ?? '-' }}</td>
             </tr>
             <tr>
-              <td style="border:none; padding:1px 0; text-align:left;"><strong>License Plate</strong></td>
-              <td style="border:none; padding:1px 4px; text-align:left;">:</td>
+              <td style="border:none; padding:1px 0; text-align:left; white-space:nowrap;"><strong>License Plate</strong></td>
+              <td style="border:none; padding:1px 4px; text-align:left; white-space:nowrap;">:</td>
               <td style="border:none; padding:1px 0; text-align:left;">{{ $service->vehicle?->license_plate ?? '-' }}</td>
             </tr>
           </table>
