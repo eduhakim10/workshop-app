@@ -40,7 +40,19 @@ class FormFields
             ->stripCharacters('.')
             ->rules(['nullable', 'regex:/^\d+([,]\d{1,2})?$/'])
             ->dehydrateStateUsing(fn ($state) => self::parseRupiah($state))
-            ->formatStateUsing(fn ($state) => self::formatRupiah($state));
+            // Format hanya saat load dari DB (angka mentah). Jangan formatStateUsing —
+            // bentrok dengan mask + live update dan bikin digit hilang saat mengetik.
+            ->afterStateHydrated(function (TextInput $component, $state): void {
+                if ($state === null || $state === '') {
+                    return;
+                }
+
+                if (is_numeric($state)) {
+                    $component->state(self::formatRupiah($state));
+                }
+            })
+            // Sync ke server setelah selesai mengetik, bukan tiap keystroke.
+            ->live(onBlur: true);
     }
 
     /**

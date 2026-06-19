@@ -257,7 +257,7 @@ class QuotationsResource extends Resource
                                     ->afterStateUpdated(function ($state, callable $set) {
                                         if ($state) {
                                             $item = Item::find($state);
-                                            $set('sales_price', $item?->sales_price);
+                                            $set('sales_price', FormFields::formatRupiah($item?->sales_price));
                                         }
                                     })
                                     ->searchable()
@@ -267,8 +267,7 @@ class QuotationsResource extends Resource
 
                                 FormFields::applyRupiahMask(TextInput::make('sales_price'))
                                     ->label('Sales Price')
-                                    ->required()
-                                    ->reactive(),
+                                    ->required(),
 
                                 TextInput::make('quantity')
                                     ->label('Quantity')
@@ -372,7 +371,6 @@ class QuotationsResource extends Resource
                 FormFields::applyRupiahMask(TextInput::make('amount_offer'))
                     ->label('Amount Offer')
                     ->required()
-                    ->reactive()
                     ->afterStateUpdated(function ($state, callable $set) {
                         $set('amount_offer_revision', $state);
                     })
