@@ -430,6 +430,10 @@ class QuotationsResource extends Resource
     {
         return $table
             ->columns([
+                BadgeColumn::make('stage')
+                    ->label('Status')
+                    ->formatStateUsing(fn ($state) => (int) $state === 2 ? 'Moved to Service' : 'Quotation')
+                    ->color(fn ($state) => (int) $state === 2 ? 'success' : 'gray'),
                 TextColumn::make('offer_number')->label('Offer Number')->searchable(),
                 TextColumn::make('serviceRequest.sr_number')->label('SR Number')->searchable(),
                 TextColumn::make('vehicle.license_plate')->label('License Plate')->searchable(),
