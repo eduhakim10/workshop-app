@@ -8,9 +8,39 @@ use App\Http\Controllers\Api\ServiceRequestController;
 use App\Http\Controllers\Api\ServicePhotoController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\CustomerController;
+use App\Http\Controllers\Api\Customer\CustomerAuthController;
+use App\Http\Controllers\Api\Customer\DashboardController as CustomerDashboardController;
+use App\Http\Controllers\Api\Customer\QuotationController as CustomerQuotationController;
+use App\Http\Controllers\Api\Customer\UserController as CustomerUserController;
 
 
 Route::post('/login', [AuthController::class, 'login']);
+
+/*
+|--------------------------------------------------------------------------
+| Customer Portal API (consumed by the customer_portal Filament app)
+|--------------------------------------------------------------------------
+| Auth: Sanctum tokens issued to CustomerUser accounts. All data is scoped
+| to the authenticated user's customer_id.
+*/
+Route::prefix('customer')->group(function () {
+    Route::post('/login', [CustomerAuthController::class, 'login']);
+
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/me', [CustomerAuthController::class, 'me']);
+        Route::post('/logout', [CustomerAuthController::class, 'logout']);
+
+        Route::get('/dashboard', [CustomerDashboardController::class, 'index']);
+
+        Route::get('/quotations', [CustomerQuotationController::class, 'index']);
+        Route::get('/quotations/{id}', [CustomerQuotationController::class, 'show']);
+
+        Route::get('/users', [CustomerUserController::class, 'index']);
+        Route::post('/users', [CustomerUserController::class, 'store']);
+        Route::put('/users/{id}', [CustomerUserController::class, 'update']);
+        Route::delete('/users/{id}', [CustomerUserController::class, 'destroy']);
+    });
+});
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/api/spk', [SpkController::class, 'index']);

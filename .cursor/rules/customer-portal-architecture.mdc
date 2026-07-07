@@ -1,0 +1,43 @@
+---
+description: MTI Customer Portal architecture, projects, and workshop-app API usage
+alwaysApply: true
+---
+
+# MTI Customer Portal — Project Map & API Contract
+
+Three related projects:
+
+| Project | Path | Role |
+|---------|------|------|
+| **customer_portal** | `~/Herd/customer_portal` | Filament 3 app for customers. Has **no local business DB** — all data comes from the workshop-app API. Laravel 13, PHP 8.3+. |
+| **workshop-app** | `~/Herd/workshop-app` | Source of truth (internal Filament app). Exposes the customer API. Laravel 11, Filament 3, Sanctum. |
+| **prototype** | `~/Herd/filament prototype customer portal` | Static HTML/CSS design reference (brand red `#c8102e`). Menus: Dashboard, Quotations, User Management. |
+
+## Data flow
+customer_portal (Filament pages) → `WorkshopApi` HTTP client → workshop-app `/api/customer/*` (Sanctum) → MySQL `workshop`.
+
+## Auth
+- Portal login accounts live in **`customer_users`** (model `App\Models\CustomerUser`, roles: Admin/Finance/Purchasing/Viewer), linked to a `customers` (company) row. All API data is scoped by `customer_id`.
+- `POST /api/customer/login` issues a **Sanctum token** (CustomerUser has `HasApiTokens`). `config/auth.php` guard `customer` + provider `customer_users`.
+- Demo login: `admin@customer.mti.co.id` / `password` (seeder `CustomerPortalDemoSeeder`).
+
+## Customer API (`routes/api.php`, prefix `/api/customer`)
+- `POST /login` → `{ token, user }`
+- `GET /me`, `POST /logout`
+- `GET /dashboard` → `{ stats:{sedang_diperbaiki,sedang_menunggu,penawaran_berlangsung,sudah_diperbaiki,total_po}, services:[…progress…] }`
+- `GET /quotations`, `GET /quotations/{id}`
+- `GET/POST /users`, `PUT/DELETE /users/{id}` (Admin only)
+
+Controllers: `app/Http/Controllers/Api/Customer/*`. Status/label mapping (English DB → Indonesian portal labels): `app/Support/ServicePresenter.php`. Always scope customer queries by `$request->user()->customer_id`.
+
+## Domain mapping
+- There is **no** `Quotation`/`PurchaseOrder`/`Company` model. A **`Service`** row is a quotation when `stage=1`, a workshop job when `stage=2`. `Customer` = company. PO is `services.po_number`.
+- Service repair progress (4 steps): Kendaraan Diterima → Sedang Dikerjakan → Sudah Diperbaiki → Serah Terima (from `status` + `handover_date`/`invoice_handover_date`).
+- Quotation status: `quotation_status` (Draft/Sent/Revised/Accepted/Rejected/Cancelled) + `po_number` → Menunggu / Disetujui / PO Diupload / Ditolak.
+- Staff `users` link to `employees`; customer portal accounts are the separate `customer_users` table.
+
+## Dev gotchas
+- workshop-app + customer_portal share MySQL DB `workshop`.
+- Migration drift: DB built from a dump, so some old migrations show "Pending" though columns already exist. Run a single new migration by path: `php artisan migrate --path=database/migrations/<file>.php` (don't run bare `migrate`).
+- PHP 8.4 (Herd) emits deprecation notices; run artisan with an explicit `cd` into the project dir to avoid stale-cwd resolving another project's vendor.
+- Herd serves each folder at `https://<folder>.test`.

@@ -44,7 +44,13 @@ return [
             'driver' => 'jwt',   // pakai jwt driver (dari tymon/jwt-auth)
             'provider' => 'users',
         ],
- 
+
+        // Customer portal accounts (token auth via Sanctum)
+        'customer' => [
+            'driver' => 'sanctum',
+            'provider' => 'customer_users',
+        ],
+
     ],
 
     /*
@@ -70,10 +76,10 @@ return [
             'model' => env('AUTH_MODEL', App\Models\User::class),
         ],
 
-        // 'users' => [
-        //     'driver' => 'database',
-        //     'table' => 'users',
-        // ],
+        'customer_users' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\CustomerUser::class,
+        ],
     ],
 
     /*
