@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\ServiceResource\Pages;
 use Filament\Actions\Action;
 use App\Filament\Resources\ServiceResource;
+use App\Filament\Resources\ServiceResource\Pages\CreateService;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 
@@ -12,6 +13,11 @@ class EditService extends EditRecord
     protected function getRedirectUrl(): string
     {
         return $this->getResource()::getUrl('index'); // Redirect to the list page
+    }
+
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        return CreateService::applyPricingTotals($data);
     }
 
     protected function getHeaderActions(): array

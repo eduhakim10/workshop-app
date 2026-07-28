@@ -44,15 +44,14 @@
       display: none !important;
    }
      @page {
-    margin: 20mm; /* atur margin */
+    margin: 20mm;
   }
-  
+
   body {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
 
-  /* Sembunyiin header/footer bawaan browser */
   @page {
     size: auto;
     margin: 0;
@@ -84,148 +83,182 @@
           Karawang, Jawa Barat
         </td>
         <td class="no-border text-left">
-          <div style="display:flex; align-items:flex-start;">
-            <div style="width:120px;">
-              <strong>Quotation No</strong><br />
-              <strong>Date</strong><br />
-              <strong>Attn</strong><br />
-              <strong>From</strong><br />
-              <strong>SR No</strong><br />
-              <strong>License Plate</strong>
-            </div>
-            <div>
-              :<br />
-              :<br />
-              :<br />
-              :<br />
-              :<br />
-              :
-            </div>
-            <div style="flex:1; padding-left:2px;">
-              {{ $service->offer_number ?? '-' }}<br />
-              {{ \Carbon\Carbon::parse($service->created_at)->format('d/m/Y') }}<br />
-              {{ $service->attn_quotation ?? '-' }}<br />
-              PT Mitra Toyotaka Indonesia<br />
-              {{ $service->serviceRequest?->sr_number ?? '-' }}<br />
-              {{ $service->vehicle?->license_plate ?? '-' }}
-            </div>
-          </div>
+          <table style="border:none; border-collapse:collapse; text-align:left;">
+            <tr>
+              <td style="border:none; padding:1px 0; text-align:left; white-space:nowrap;"><strong>Quotation No</strong></td>
+              <td style="border:none; padding:1px 4px; text-align:left; white-space:nowrap;">:</td>
+              <td style="border:none; padding:1px 0; text-align:left;">{{ $service->offer_number ?? '-' }}</td>
+            </tr>
+            <tr>
+              <td style="border:none; padding:1px 0; text-align:left; white-space:nowrap;"><strong>Date</strong></td>
+              <td style="border:none; padding:1px 4px; text-align:left; white-space:nowrap;">:</td>
+              <td style="border:none; padding:1px 0; text-align:left;">{{ \Carbon\Carbon::parse($service->created_at)->format('d/m/Y') }}</td>
+            </tr>
+            <tr>
+              <td style="border:none; padding:1px 0; text-align:left; white-space:nowrap;"><strong>Attn</strong></td>
+              <td style="border:none; padding:1px 4px; text-align:left; white-space:nowrap;">:</td>
+              <td style="border:none; padding:1px 0; text-align:left;">{{ $service->attn_quotation ?? '-' }}</td>
+            </tr>
+            <tr>
+              <td style="border:none; padding:1px 0; text-align:left; white-space:nowrap;"><strong>From</strong></td>
+              <td style="border:none; padding:1px 4px; text-align:left; white-space:nowrap;">:</td>
+              <td style="border:none; padding:1px 0; text-align:left;">PT Mitra Toyotaka Indonesia</td>
+            </tr>
+            <tr>
+              <td style="border:none; padding:1px 0; text-align:left; white-space:nowrap;"><strong>SR No</strong></td>
+              <td style="border:none; padding:1px 4px; text-align:left; white-space:nowrap;">:</td>
+              <td style="border:none; padding:1px 0; text-align:left;">{{ $service->serviceRequest?->sr_number ?? '-' }}</td>
+            </tr>
+            <tr>
+              <td style="border:none; padding:1px 0; text-align:left; white-space:nowrap;"><strong>License Plate</strong></td>
+              <td style="border:none; padding:1px 4px; text-align:left; white-space:nowrap;">:</td>
+              <td style="border:none; padding:1px 0; text-align:left;">{{ $service->vehicle?->license_plate ?? '-' }}</td>
+            </tr>
+          </table>
         </td>
       </tr>
     </table>
 
     <p>We are pleased to offer you the following price:</p>
 
+@php
+    use App\Helpers\QuotationPricing;
+
+    $items = $service->items_offer ?? [];
+    $totals = QuotationPricing::calcFromGroups(
+        $items,
+        $service->ppn_type,
+        $service->ppn_percent
+    );
+    $ppnPercentLabel = rtrim(rtrim(number_format((float) ($service->ppn_percent ?? 0), 2, ',', '.'), '0'), ',');
+    if ($ppnPercentLabel === '') { $ppnPercentLabel = '0'; }
+    $hasDiscount = collect($items)->flatMap(fn($g) => $g['items'] ?? [])->contains(fn($i) => ((float) ($i['discount_percent'] ?? 0)) > 0);
+    $footerColspan = $hasDiscount ? 6 : 4;
+@endphp
+
     <table border="1" cellpadding="6" cellspacing="0" width="100%" style="border-collapse: collapse; font-family: Arial, sans-serif; font-size: 12px;">
   <thead>
     <tr>
       <th style="width:5%; text-align:center;">NO</th>
-      <th style="width:40%; text-align:center;">ITEM</th>
-      <th style="width:10%; text-align:center;">QTY ORDER<br>(UNIT)</th>
-      <th style="width:15%; text-align:center;">PRICE / UNIT</th>
-      <th style="width:15%; text-align:center;">AMOUNT</th>
-      <th style="width:15%; text-align:center;">REMARKS</th>
+      <th style="width:{{ $hasDiscount ? '30' : '41' }}%; text-align:center;">ITEM</th>
+      <th style="width:8%; text-align:center;">QTY ORDER<br>(UNIT)</th>
+      <th style="width:13%; text-align:center;">PRICE / UNIT</th>
+      @if($hasDiscount)
+      <th style="width:8%; text-align:center;">DISC (%)</th>
+      <th style="width:11%; text-align:center;">DISC AMOUNT</th>
+      @endif
+      <th style="width:13%; text-align:center;">AMOUNT</th>
+      <th style="width:12%; text-align:center;">REMARKS</th>
     </tr>
   </thead>
   <tbody>
-    @php 
+    @php
         $no = 1;
-        $subtotal = 0;
     @endphp
 
-    @foreach($service->items_offer as $group)
-        @php 
-            $serviceGroup = \App\Models\ServiceGroup::find($group['service_group_id']);
+    @foreach($items as $group)
+        @php
+            $serviceGroup = \App\Models\ServiceGroup::find($group['service_group_id'] ?? null);
             $groupName = $serviceGroup?->name ?? '-';
-            $groupTotal = 0;
+            $groupTotals = QuotationPricing::calcGroup($group);
             $remarks = $service->notes;
+            $groupItems = $group['items'] ?? [];
+            $itemCount = count($groupItems);
         @endphp
 
+        {{-- Group header row --}}
         <tr>
-            <td style="text-align:center;">{{ $no++ }}</td>
-            <td style="text-align:left;">
-                <strong>{{ strtoupper($groupName) }}</strong><br><br>
-
-                @foreach($group['items'] as $itemData)
-                    @php
-                        $item = \App\Models\Item::find($itemData['item_id']);
-                        $itemName = $item?->name ?? '-';
-                    @endphp
-                    {{ $itemName }} <br>
-                @endforeach
-            </td>
-
-            <td style="text-align:center; vertical-align:top;">
-                <br><br><br>
-                @foreach($group['items'] as $itemData)
-                    {{ $itemData['quantity'] ?? '-' }} <br>
-                @endforeach
-            </td>
-
-            <td style="vertical-align:top;">
-                <br><br><br>
-                @foreach($group['items'] as $itemData)
-                    <div style="display:flex; justify-content:space-between;">
-                        <span>Rp</span>
-                        <span>{{ number_format($itemData['sales_price'], 0, ',', '.') }}</span>
-                    </div>
-                @endforeach
-            </td>
-
-            <td style="vertical-align:top;">
-                <br><br><br>
-                @foreach($group['items'] as $itemData)
-                    @php 
-                        $amount = $itemData['sales_price'] * $itemData['quantity'];
-                        $groupTotal += $amount;
-                        $subtotal += $amount;
-                    @endphp
-                    <div style="display:flex; justify-content:space-between;">
-                        <span>Rp</span>
-                        <span>{{ number_format($amount, 0, ',', '.') }}</span>
-                    </div>
-                @endforeach
-                <hr style="margin: 0px 0;">
-                <div style="display:flex; justify-content:space-between;font-weight:bold;">
-                        <span>Rp</span>
-                        <span>{{ number_format($groupTotal, 0, ',', '.') }}</span>
-                    </div>
-                <!-- TOTAL PER GROUP -->
-               
-             
-            </td>
-
-            <td style="vertical-align:top;">{{ $remarks }}</td>
+            <td style="text-align:center; vertical-align:middle;" rowspan="{{ $itemCount + 1 }}">{{ $no++ }}</td>
+            <td style="text-align:left; font-weight:bold; border-bottom:hidden;"><strong>{{ strtoupper($groupName) }}</strong></td>
+            <td style="border-bottom:hidden; border: 1px solid #000;"></td>{{-- QTY --}}
+            <td style="border-bottom:hidden; border: 1px solid #000;"></td>{{-- PRICE/UNIT --}}
+            @if($hasDiscount)
+            <td style="border-bottom:hidden; border: 1px solid #000;"></td>{{-- DISC% --}}
+            <td style="border-bottom:hidden; border: 1px solid #000;"></td>{{-- DISC AMOUNT --}}
+            @endif
+            <td style="border-bottom:hidden; border: 1px solid #000;"></td>{{-- AMOUNT --}}
+            <td style="border-bottom:hidden; vertical-align:top;">{{ $remarks }}</td>
         </tr>
+
+        {{-- One row per item --}}
+        @foreach($groupItems as $idx => $itemData)
+            @php
+                $item = \App\Models\Item::find($itemData['item_id'] ?? null);
+                $itemName = $item?->name ?? '-';
+                $line = QuotationPricing::calcLine($itemData);
+                $isLast = ($idx === $itemCount - 1);
+                $isFirst = ($idx === 0);
+                $nb = $isLast ? '' : 'border-bottom:hidden;';
+                $nt = $isFirst ? 'border-top:hidden;' : '';
+            @endphp
+            <tr>
+                <td style="text-align:left; vertical-align:top; {{ $nb }} {{ $nt }}">{{ $itemName }}</td>
+                <td style="text-align:center; vertical-align:top; {{ $nb }} {{ $nt }}">{{ $itemData['quantity'] ?? '-' }}</td>
+                <td style="vertical-align:top; {{ $nb }} {{ $nt }}">
+                    <div style="display:flex; justify-content:space-between;">
+                        <span>Rp</span>
+                        <span>{{ number_format((float) ($itemData['sales_price'] ?? 0), 0, ',', '.') }}</span>
+                    </div>
+                </td>
+                @if($hasDiscount)
+                <td style="text-align:center; vertical-align:top; {{ $nb }} {{ $nt }}">{{ rtrim(rtrim(number_format((float) ($itemData['discount_percent'] ?? 0), 2, ',', '.'), '0'), ',') }}%</td>
+                <td style="vertical-align:top; {{ $nb }} {{ $nt }}">
+                    <div style="display:flex; justify-content:space-between;">
+                        <span>Rp</span>
+                        <span>{{ number_format($line['discount'], 0, ',', '.') }}</span>
+                    </div>
+                </td>
+                @endif
+                <td style="vertical-align:top; {{ $nb }} {{ $nt }}">
+                    <div style="display:flex; justify-content:space-between;">
+                        <span>Rp</span>
+                        <span>{{ number_format($line['subtotal'], 0, ',', '.') }}</span>
+                    </div>
+                    @if($isLast)
+                    <hr style="margin: 4px 0;">
+                    <div style="display:flex; justify-content:space-between; font-weight:bold;">
+                        <span>Rp</span>
+                        <span>{{ number_format($groupTotals['subtotal'], 0, ',', '.') }}</span>
+                    </div>
+                    @endif
+                </td>
+                <td style="vertical-align:top; {{ $nb }} {{ $nt }}"></td>
+            </tr>
+        @endforeach
     @endforeach
 
-    <!-- Footer subtotal -->
+    <!-- Summary footer -->
     <tr>
-      <td colspan="4" style="text-align:right;"><strong>Sub Total</strong></td>
+      <td colspan="{{ $footerColspan }}" style="text-align:right;"><strong>Sub Total (DPP)</strong></td>
       <td>
         <div style="display:flex; justify-content:space-between;">
           <span>Rp</span>
-          <span>{{ number_format($subtotal, 0, ',', '.') }}</span>
+          <span>{{ number_format($totals['subtotal'], 0, ',', '.') }}</span>
         </div>
       </td>
       <td></td>
     </tr>
     <tr>
-      <td colspan="4" style="text-align:right;"><strong>PPN 11%</strong></td>
+      <td colspan="{{ $footerColspan }}" style="text-align:right;">
+        <strong>
+          PPN {{ $ppnPercentLabel }}%
+          <br><small>({{ QuotationPricing::ppnTypeLabel($service->ppn_type) }})</small>
+        </strong>
+      </td>
       <td>
         <div style="display:flex; justify-content:space-between;">
           <span>Rp</span>
-          <span>{{ number_format($subtotal * 0.11, 0, ',', '.') }}</span>
+          <span>{{ number_format($totals['ppn'], 0, ',', '.') }}</span>
         </div>
       </td>
       <td></td>
     </tr>
     <tr>
-      <td colspan="4" style="text-align:right;"><strong>Total</strong></td>
+      <td colspan="{{ $footerColspan }}" style="text-align:right;"><strong>Total</strong></td>
       <td>
         <div style="display:flex; justify-content:space-between;">
           <span>Rp</span>
-          <strong>{{ number_format($subtotal * 1.11, 0, ',', '.') }}</strong>
+          <strong>{{ number_format($totals['total'], 0, ',', '.') }}</strong>
         </div>
       </td>
       <td></td>
@@ -233,7 +266,7 @@
   </tbody>
 </table>
 
-   
+
 
    <!-- Terms & Conditions -->
 <p><strong>Terms & Conditions:</strong></p>
@@ -250,14 +283,10 @@
     <div style="width: 100px;"><strong>Validity</strong></div>
     <div>: {{ $service->validity_terms }}</div>
   </div>
-  <!-- <div style="display: flex;">
-    <div style="width: 100px;"><strong>Note</strong></div>
-    <div>: Harga di atas belum termasuk PPN 11%</div>
-  </div> -->
 </div>
 
 
-<p>Balaraja, {{ \Carbon\Carbon::parse($service->created_at_offer)->translatedFormat('d F Y') }}</p>
+<p>Karawang, {{ \Carbon\Carbon::parse($service->created_at_offer)->translatedFormat('d F Y') }}</p>
 
 <div style="display:flex; justify-content:space-between; margin-top:10px; text-align:center;">
   <div>
