@@ -19,9 +19,10 @@ class DashboardController extends Controller
 
         $base = fn () => Service::where('customer_id', $customerId);
 
+        // Sedang diperbaiki = job workshop (stage 2) yang foto after-nya belum diupload
         $sedangDiperbaiki = (clone $base())
             ->where('stage', 2)
-            ->whereIn('status', ['In Progress', 'Pending Parts', 'On Hold'])
+            ->whereDoesntHave('afterPhotos')
             ->count();
 
         $sedangMenunggu = (clone $base())
@@ -34,9 +35,10 @@ class DashboardController extends Controller
             ->whereNotIn('quotation_status', ['Rejected', 'Cancelled'])
             ->count();
 
+        // Sudah diperbaiki = stage 2 dan foto after sudah ada
         $sudahDiperbaiki = (clone $base())
             ->where('stage', 2)
-            ->where('status', 'Completed')
+            ->whereHas('afterPhotos')
             ->count();
 
         $totalPo = (clone $base())
