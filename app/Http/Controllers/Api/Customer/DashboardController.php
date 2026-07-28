@@ -37,9 +37,11 @@ class DashboardController extends Controller
             ->whereNotIn('quotation_status', ['Rejected', 'Cancelled'])
             ->count();
 
-        // Sudah diperbaiki = stage 2 dan foto after sudah ada
+        // Sudah diperbaiki = sama seperti sedang diperbaiki, tapi foto after sudah diupload
         $sudahDiperbaiki = (clone $base())
             ->where('stage', 2)
+            ->whereNotNull('sr_number')
+            ->where('sr_number', '!=', '')
             ->whereHas('afterPhotos')
             ->count();
 
