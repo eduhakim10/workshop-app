@@ -32,9 +32,14 @@ class DashboardController extends Controller
             ->whereIn('quotation_status', ['Draft', 'Sent', 'Revised'])
             ->count();
 
+        // Penawaran berlangsung = quotation (stage 1), SR sudah ada, PO belum diupload
         $penawaranBerlangsung = (clone $base())
             ->where('stage', 1)
-            ->whereNotIn('quotation_status', ['Rejected', 'Cancelled'])
+            ->whereNotNull('sr_number')
+            ->where('sr_number', '!=', '')
+            ->where(function ($q) {
+                $q->whereNull('po_number')->orWhere('po_number', '');
+            })
             ->count();
 
         // Sudah diperbaiki = sama seperti sedang diperbaiki, tapi foto after sudah diupload
