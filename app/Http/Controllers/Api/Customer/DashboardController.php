@@ -19,9 +19,11 @@ class DashboardController extends Controller
 
         $base = fn () => Service::where('customer_id', $customerId);
 
-        // Sedang diperbaiki = job workshop (stage 2) yang foto after-nya belum diupload
+        // Sedang diperbaiki = job workshop (stage 2) yang foto after-nya belum diupload + punya SR
         $sedangDiperbaiki = (clone $base())
             ->where('stage', 2)
+            ->whereNotNull('sr_number')
+            ->where('sr_number', '!=', '')
             ->whereDoesntHave('afterPhotos')
             ->count();
 
