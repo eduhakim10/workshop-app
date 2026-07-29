@@ -39,6 +39,8 @@ class Service extends Model
         'quotation_status',
         'spk_number',
         'po_number',
+        'po_date',
+        'po_file',
         'created_at_offer',
         'updated_at_offer',
         'sr_number',
@@ -63,6 +65,7 @@ class Service extends Model
         'total_price' => 'decimal:2',
         'amount_offer' => 'decimal:2',
         'amount_offer_revision' => 'decimal:2',
+        'po_date' => 'date',
     ];
     
     public function customer()

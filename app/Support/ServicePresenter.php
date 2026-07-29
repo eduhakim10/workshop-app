@@ -17,7 +17,8 @@ class ServicePresenter
 {
     /**
      * Customer-facing quotation status.
-     * Prototype badges: Menunggu (warning), Disetujui (success), PO Diupload (info), Ditolak (danger).
+     * Portal flow: Menunggu (belum ada PO) → PO Diupload (customer setuju via upload PO).
+     * Tidak ada langkah approve/reject terpisah di portal.
      */
     public static function quotationStatus(Service $s): array
     {
@@ -41,16 +42,6 @@ class ServicePresenter
             ];
         }
 
-        if ($status === 'Accepted') {
-            return [
-                'code' => 'disetujui',
-                'label' => 'Disetujui',
-                'color' => 'success',
-                'tab' => 'approved',
-            ];
-        }
-
-        // Draft / Sent / Revised / empty => waiting on the customer
         return [
             'code' => 'menunggu',
             'label' => 'Menunggu',

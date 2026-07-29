@@ -8,11 +8,13 @@ use App\Support\ServicePresenter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Storage;
 
 class QuotationController extends Controller
 {
     /**
-     * List quotations (Service stage 1 & 2) for the authenticated customer.
+     * List quotations for the authenticated customer.
+     * Only rows with filled sr_number (keeps payload small for the portal).
      */
     public function index(Request $request): JsonResponse
     {
@@ -20,7 +22,12 @@ class QuotationController extends Controller
 
         $items = Service::where('customer_id', $customerId)
             ->whereIn('stage', [1, 2])
-            ->with('vehicle')
+            ->whereNotNull('sr_number')
+            ->where('sr_number', '!=', '')
+            ->with([
+                'vehicle:id,brand,model,license_plate',
+                'categoryService:id,name',
+            ])
             ->orderByDesc('created_at_offer')
             ->orderByDesc('created_at')
             ->get()
@@ -61,7 +68,6 @@ class QuotationController extends Controller
                 'sr_number' => $s->sr_number ?: optional($sr)->sr_number,
                 'attn' => $s->attn_quotation,
                 'status' => $status,
-                // backward-compatible alias
                 'quotation_status' => $status,
                 'vehicle' => $vehicle,
                 'category' => optional($s->categoryService)->name
@@ -76,6 +82,8 @@ class QuotationController extends Controller
                 'amount_offer_revision' => (float) $s->amount_offer_revision,
                 'spk_number' => $s->spk_number,
                 'po_number' => $s->po_number,
+                'po_date' => optional($s->po_date)->toDateString(),
+                'po_file' => $s->po_file,
                 'work_order_number' => $s->work_order_number,
                 'stage' => (int) $s->stage,
                 'notes' => $s->notes,
@@ -101,10 +109,49 @@ class QuotationController extends Controller
                 'line_items' => $lineItems,
                 'totals' => $totals,
                 'timeline' => ServicePresenter::quotationTimeline($s),
-                // raw fallback for older clients
                 'items' => $s->items_offer ?: $s->items,
             ],
         ]);
+    }
+
+    public function uploadPo(Request $request, int $id): JsonResponse
+    {
+        $service = $this->findOwnedQuotation($request, $id);
+
+        $data = $request->validate([
+            'po_number' => ['required', 'string', 'max:100'],
+            'po_date' => ['required', 'date'],
+            'po_file' => ['required', 'file', 'mimes:pdf', 'max:10240'],
+        ]);
+
+        if (in_array($service->quotation_status, ['Rejected', 'Cancelled'], true)) {
+            return response()->json(['message' => 'Penawaran yang ditolak tidak dapat diupload PO.'], 422);
+        }
+
+        if ($service->po_file && Storage::disk('public')->exists($service->po_file)) {
+            Storage::disk('public')->delete($service->po_file);
+        }
+
+        $path = $request->file('po_file')->store('customer_po/' . $service->customer_id, 'public');
+
+        // Upload PO = customer menyetujui penawaran
+        $service->po_number = $data['po_number'];
+        $service->po_date = $data['po_date'];
+        $service->po_file = $path;
+        $service->quotation_status = 'Accepted';
+        $service->save();
+
+        return response()->json([
+            'message' => 'PO berhasil diupload. Penawaran disetujui.',
+            'data' => $this->row($service->fresh(['vehicle', 'categoryService'])),
+        ]);
+    }
+
+    private function findOwnedQuotation(Request $request, int $id): Service
+    {
+        return Service::where('customer_id', $request->user()->customer_id)
+            ->whereIn('stage', [1, 2])
+            ->findOrFail($id);
     }
 
     private function row(Service $s): array
@@ -112,6 +159,9 @@ class QuotationController extends Controller
         $status = ServicePresenter::quotationStatus($s);
         $vehicle = ServicePresenter::vehicleLabel($s);
         $date = $s->created_at_offer ? Carbon::parse($s->created_at_offer) : $s->created_at;
+        $offer = (string) ($s->offer_number ?? '');
+        $plate = (string) ($vehicle['license_plate'] ?? '');
+        $name = (string) ($vehicle['name'] ?? '');
 
         return [
             'id' => $s->id,
@@ -119,11 +169,16 @@ class QuotationController extends Controller
             'sr_number' => $s->sr_number,
             'vehicle' => $vehicle['name'],
             'license_plate' => $vehicle['license_plate'],
+            'category' => optional($s->categoryService)->name
+                ?: $s->damage_classification
+                ?: '-',
             'date' => optional($date)->toDateString(),
             'amount' => (float) ($s->amount_offer_revision ?: $s->amount_offer),
             'status' => $status,
             'stage' => (int) $s->stage,
             'po_number' => $s->po_number,
+            'po_date' => $s->po_date ? Carbon::parse($s->po_date)->toDateString() : null,
+            'search' => strtolower(trim($offer . ' ' . $name . ' ' . $plate . ' ' . ($s->sr_number ?? ''))),
         ];
     }
 }
