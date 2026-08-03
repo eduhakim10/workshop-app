@@ -437,18 +437,27 @@ class QuotationsResource extends Resource
                 TextColumn::make('offer_number')->label('Offer Number')->searchable(),
                 TextColumn::make('serviceRequest.sr_number')->label('SR Number')->searchable(),
                 TextColumn::make('vehicle.license_plate')->label('License Plate')->searchable(),
+                TextColumn::make('subtotal_amount')
+                    ->label('Sub Total ')
+                    ->formatStateUsing(fn ($state) => $state !== null ? 'Rp ' . number_format((float) $state, 2, ',', '.') : '-')
+                    ->toggleable(),
+                TextColumn::make('ppn')
+                    ->label('PPN')
+                    ->getStateUsing(function ($record) {
+                        $totals = QuotationPricing::calcFromGroups(
+                            $record->items_offer ?? [],
+                            $record->ppn_type,
+                            $record->ppn_percent
+                        );
+
+                        return $totals['ppn'];
+                    })
+                    ->formatStateUsing(fn ($state) => 'Rp ' . number_format((float) $state, 2, ',', '.'))
+                    ->toggleable(),
                 TextColumn::make('amount_offer')
                     ->label('Amount')
                     ->formatStateUsing(fn ($state) => $state !== null ? 'Rp ' . number_format((float) $state, 2, ',', '.') : '-')
                     ->searchable(),
-                TextColumn::make('amount_offer_revision')
-                    ->label('Amount Revision')
-                    ->formatStateUsing(fn ($state) => $state !== null ? 'Rp ' . number_format((float) $state, 2, ',', '.') : '-')
-                    ->searchable(),
-                TextColumn::make('total_price')
-                    ->label('Total Price')
-                    ->formatStateUsing(fn ($state) => $state !== null ? 'Rp ' . number_format((float) $state, 2, ',', '.') : '-')
-                    ->toggleable(),
                 TextColumn::make('damage_classification')
                     ->label('Klasifikasi Kerusakan')
                     ->toggleable(),
