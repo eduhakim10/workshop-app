@@ -94,6 +94,28 @@ class ServicePresenter
         ];
     }
 
+    /**
+     * Compact quotation row for the portal dashboard widget.
+     *
+     * @return array<string, mixed>
+     */
+    public static function quotationDashboardRow(Service $s): array
+    {
+        $status = self::quotationStatus($s);
+        $vehicle = self::vehicleLabel($s);
+        $date = $s->created_at_offer ? Carbon::parse($s->created_at_offer) : $s->created_at;
+
+        return [
+            'id' => $s->id,
+            'offer_number' => $s->offer_number,
+            'vehicle' => $vehicle['name'],
+            'license_plate' => $vehicle['license_plate'],
+            'date' => optional($date)->toDateString(),
+            'amount' => (float) ($s->amount_offer_revision ?: $s->amount_offer),
+            'status' => $status,
+        ];
+    }
+
     public static function vehicleLabel(Service $s): array
     {
         $v = $s->vehicle;

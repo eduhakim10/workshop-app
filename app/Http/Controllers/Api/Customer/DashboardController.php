@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Customer;
 
 use App\Http\Controllers\Controller;
 use App\Models\Service;
+use App\Services\SettingService;
 use App\Support\ServicePresenter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -11,13 +12,29 @@ use Illuminate\Http\Request;
 class DashboardController extends Controller
 {
     /**
-     * Dashboard stats + active service progress, scoped to the authenticated customer.
+     * Dashboard stats + widgets, scoped to the authenticated customer.
+     *
+     * Query:
+     * - from / to (Y-m-d) optional. If omitted, workshop-app portal setting is used.
      */
-    public function index(Request $request): JsonResponse
+    public function index(Request $request, SettingService $settings): JsonResponse
     {
-        $customerId = $request->user()->customer_id;
+        $request->validate([
+            'from' => ['nullable', 'date'],
+            'to' => ['nullable', 'date'],
+        ]);
 
-        $base = fn () => Service::where('customer_id', $customerId);
+        $period = $settings->resolveDashboardPeriod(
+            $request->query('from'),
+            $request->query('to'),
+        );
+
+        $customerId = $request->user()->customer_id;
+        $from = $period['from'];
+        $to = $period['to'];
+
+        $base = fn () => Service::where('customer_id', $customerId)
+            ->inPortalPeriod($from, $to);
 
         // Sedang diperbaiki = job workshop (stage 2) yang foto after-nya belum diupload + punya SR
         $sedangDiperbaiki = (clone $base())
@@ -75,6 +92,17 @@ class DashboardController extends Controller
                 ];
             });
 
+        $quotations = (clone $base())
+            ->whereIn('stage', [1, 2])
+            ->whereNotNull('sr_number')
+            ->where('sr_number', '!=', '')
+            ->with(['vehicle:id,brand,model,license_plate'])
+            ->orderByDesc('created_at_offer')
+            ->orderByDesc('created_at')
+            ->limit(4)
+            ->get()
+            ->map(fn (Service $s) => ServicePresenter::quotationDashboardRow($s));
+
         return response()->json([
             'stats' => [
                 'sedang_diperbaiki' => $sedangDiperbaiki,
@@ -84,6 +112,8 @@ class DashboardController extends Controller
                 'total_po' => $totalPo,
             ],
             'services' => $progress,
+            'quotations' => $quotations,
+            'period' => $period,
         ]);
     }
 }

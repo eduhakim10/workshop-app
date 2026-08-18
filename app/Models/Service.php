@@ -166,7 +166,15 @@ class Service extends Model
         });
     }
 
-
-
-
+    /**
+     * Filter by the period used on the customer portal dashboard.
+     * Uses service start date, then quotation date, then created_at.
+     */
+    public function scopeInPortalPeriod($query, string $from, string $to)
+    {
+        return $query->whereRaw(
+            'DATE(COALESCE(services.service_start_date, services.created_at_offer, services.created_at)) BETWEEN ? AND ?',
+            [$from, $to]
+        );
+    }
 }

@@ -24,7 +24,9 @@ customer_portal (Filament pages) → `WorkshopApi` HTTP client → workshop-app 
 ## Customer API (`routes/api.php`, prefix `/api/customer`)
 - `POST /login` → `{ token, user }`
 - `GET /me`, `POST /logout`
-- `GET /dashboard` → `{ stats:{sedang_diperbaiki,sedang_menunggu,penawaran_berlangsung,sudah_diperbaiki,total_po}, services:[…progress…] }`
+- `GET /dashboard` → `{ stats:{sedang_diperbaiki,sedang_menunggu,penawaran_berlangsung,sudah_diperbaiki,total_po}, services:[…progress…], quotations:[…], period:{from,to,default_from,default_to,lookback_days,is_default} }`
+  - Optional query `from` / `to` (`Y-m-d`). If omitted, uses workshop-app setting `customer_portal.dashboard_lookback_days` (default 30, inclusive of today).
+  - Workshop staff edit that setting at Filament page **Management → Portal Settings**.
 - `GET /quotations`, `GET /quotations/{id}`
 - `GET/POST /users`, `PUT/DELETE /users/{id}` (Admin only)
 
