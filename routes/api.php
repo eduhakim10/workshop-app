@@ -34,6 +34,7 @@ Route::prefix('customer')->group(function () {
 
         Route::get('/quotations', [CustomerQuotationController::class, 'index']);
         Route::get('/quotations/{id}', [CustomerQuotationController::class, 'show']);
+        Route::get('/quotations/{id}/print', [CustomerQuotationController::class, 'print']);
         Route::post('/quotations/{id}/upload-po', [CustomerQuotationController::class, 'uploadPo']);
 
         Route::get('/users', [CustomerUserController::class, 'index']);

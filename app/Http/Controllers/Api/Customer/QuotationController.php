@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Api\Customer;
 use App\Http\Controllers\Controller;
 use App\Models\Service;
 use App\Support\ServicePresenter;
+use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 
@@ -112,6 +114,27 @@ class QuotationController extends Controller
                 'items' => $s->items_offer ?: $s->items,
             ],
         ]);
+    }
+
+    /**
+     * Print quotation using the same workshop staff print blade (detail layout + signature).
+     */
+    public function print(Request $request, int $id): View|Response
+    {
+        $service = Service::where('customer_id', $request->user()->customer_id)
+            ->whereIn('stage', [1, 2])
+            ->with(['customer', 'vehicle', 'serviceRequest', 'preparedBy'])
+            ->findOrFail($id);
+
+        if (! $service->items_offer || (is_countable($service->items_offer) && count($service->items_offer) === 0)) {
+            return response(
+                '<!DOCTYPE html><html><body><p>Silakan isi item penawaran terlebih dahulu.</p></body></html>',
+                422,
+                ['Content-Type' => 'text/html; charset=UTF-8']
+            );
+        }
+
+        return view('prints.quotation-detail', compact('service'));
     }
 
     public function uploadPo(Request $request, int $id): JsonResponse
