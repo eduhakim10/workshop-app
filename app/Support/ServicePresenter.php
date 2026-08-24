@@ -8,6 +8,7 @@ use App\Models\Item;
 use App\Models\Service;
 use App\Models\ServiceGroup;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * Maps internal Service/quotation state into the customer-facing labels used by
@@ -51,47 +52,139 @@ class ServicePresenter
     }
 
     /**
-     * Service repair progress as a 4-step flow (matches prototype):
-     * 1 Kendaraan Diterima -> 2 Sedang Dikerjakan -> 3 Sudah Diperbaiki -> 4 Serah Terima.
+     * Customer portal service progress (4 steps):
+     * 1 Kendaraan Diterima (auto, foto before) -> 2 Antrian (auto saat move to service)
+     * -> 3 Dikerjakan (admin) -> 4 Finishgood/Selesai (admin + foto after).
      */
     public static function serviceProgress(Service $s): array
     {
         $status = (string) $s->status;
-        $hasHandover = ! empty($s->handover_date) || ! empty($s->invoice_handover_date);
-        $hasAfterPhotos = $s->relationLoaded('afterPhotos')
-            ? $s->afterPhotos->isNotEmpty()
-            : $s->afterPhotos()->exists();
+        $hasBeforePhotos = self::hasPhotos($s, 'before');
+        $hasAfterPhotos = self::hasPhotos($s, 'after');
+        $vehicleReceived = $hasBeforePhotos || ! empty($s->service_request_id);
+        $inQueue = (int) $s->stage === 2;
+        $inProgress = in_array($status, ['In Progress', 'Pending Parts', 'On Hold'], true);
+        $finished = $status === 'Completed' || $hasAfterPhotos;
 
-        $step = 1;
-        $label = 'Kendaraan Diterima';
-        $badge = ['label' => 'Baru Masuk', 'color' => 'gray'];
-
-        if ($hasHandover) {
+        if ($finished) {
             $step = 4;
-            $label = 'Serah Terima';
+            $label = 'Selesai';
             $badge = ['label' => 'Selesai', 'color' => 'success'];
-        } elseif ($hasAfterPhotos || $status === 'Completed') {
+        } elseif ($inProgress) {
             $step = 3;
-            $label = 'Sudah Diperbaiki';
-            $badge = ['label' => 'Siap Diambil', 'color' => 'info'];
-        } elseif (in_array($status, ['In Progress', 'Pending Parts', 'On Hold'], true) || (int) $s->stage === 2) {
-            $step = 2;
-            $label = 'Sedang Dikerjakan';
+            $label = 'Dikerjakan';
             $badge = ['label' => 'Dikerjakan', 'color' => 'warning'];
+        } elseif ($inQueue) {
+            $step = 2;
+            $label = 'Antrian';
+            $badge = ['label' => 'Antrian', 'color' => 'info'];
+        } elseif ($vehicleReceived) {
+            $step = 1;
+            $label = 'Kendaraan Diterima';
+            $badge = ['label' => 'Diterima', 'color' => 'gray'];
+        } else {
+            $step = 1;
+            $label = 'Kendaraan Diterima';
+            $badge = ['label' => 'Menunggu', 'color' => 'gray'];
         }
+
+        $beforeCount = self::photoCount($s, 'before');
+        $afterCount = self::photoCount($s, 'after');
 
         return [
             'step' => $step,
             'step_label' => $label,
             'total_steps' => 4,
             'steps' => [
-                ['no' => 1, 'label' => 'Kendaraan Diterima', 'done' => $step >= 1, 'active' => $step === 1],
-                ['no' => 2, 'label' => 'Sedang Dikerjakan', 'done' => $step >= 2, 'active' => $step === 2],
-                ['no' => 3, 'label' => 'Sudah Diperbaiki', 'done' => $step >= 3, 'active' => $step === 3],
-                ['no' => 4, 'label' => 'Serah Terima', 'done' => $step >= 4, 'active' => $step === 4],
+                [
+                    'no' => 1,
+                    'label' => 'Kendaraan Diterima',
+                    'done' => $vehicleReceived,
+                    'active' => $step === 1,
+                    'clickable' => $beforeCount > 0,
+                    'action' => $beforeCount > 0 ? 'before_photos' : null,
+                    'photo_count' => $beforeCount,
+                ],
+                [
+                    'no' => 2,
+                    'label' => 'Antrian',
+                    'done' => $step > 2,
+                    'active' => $step === 2,
+                    'clickable' => false,
+                    'action' => null,
+                    'photo_count' => 0,
+                ],
+                [
+                    'no' => 3,
+                    'label' => 'Dikerjakan',
+                    'done' => $step > 3,
+                    'active' => $step === 3,
+                    'clickable' => false,
+                    'action' => null,
+                    'photo_count' => 0,
+                ],
+                [
+                    'no' => 4,
+                    'label' => 'Finishgood',
+                    'done' => $finished,
+                    'active' => $step === 4 && ! $finished,
+                    'clickable' => $afterCount > 0,
+                    'action' => $afterCount > 0 ? 'after_photos' : null,
+                    'photo_count' => $afterCount,
+                ],
             ],
             'badge' => $badge,
         ];
+    }
+
+    /**
+     * @return array<int, array{id:int,url:string}>
+     */
+    public static function servicePhotos(Service $s, string $type): array
+    {
+        if (! in_array($type, ['before', 'after'], true)) {
+            return [];
+        }
+
+        $relation = $type === 'before' ? 'beforePhotos' : 'afterPhotos';
+
+        if ($s->relationLoaded($relation)) {
+            $photos = $s->{$relation};
+        } else {
+            $photos = $s->{$relation}()->get();
+        }
+
+        return $photos->map(fn ($photo) => [
+            'id' => $photo->id,
+            'url' => self::photoUrl($photo->file_path),
+        ])->values()->all();
+    }
+
+    private static function hasPhotos(Service $s, string $type): bool
+    {
+        return self::photoCount($s, $type) > 0;
+    }
+
+    private static function photoCount(Service $s, string $type): int
+    {
+        $relation = $type === 'before' ? 'beforePhotos' : 'afterPhotos';
+
+        if ($s->relationLoaded($relation)) {
+            return $s->{$relation}->count();
+        }
+
+        return $s->{$relation}()->count();
+    }
+
+    private static function photoUrl(?string $path): string
+    {
+        if (empty($path)) {
+            return '';
+        }
+
+        $normalized = ltrim(str_replace('\\', '/', $path), '/');
+
+        return url(Storage::url($normalized));
     }
 
     /**

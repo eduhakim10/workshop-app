@@ -11,7 +11,7 @@ use App\Http\Controllers\Api\CustomerController;
 use App\Http\Controllers\Api\Customer\CustomerAuthController;
 use App\Http\Controllers\Api\Customer\DashboardController as CustomerDashboardController;
 use App\Http\Controllers\Api\Customer\QuotationController as CustomerQuotationController;
-use App\Http\Controllers\Api\Customer\UserController as CustomerUserController;
+use App\Http\Controllers\Api\Customer\ServiceController as CustomerServiceController;
 
 
 Route::post('/login', [AuthController::class, 'login']);
@@ -31,6 +31,8 @@ Route::prefix('customer')->group(function () {
         Route::post('/logout', [CustomerAuthController::class, 'logout']);
 
         Route::get('/dashboard', [CustomerDashboardController::class, 'index']);
+
+        Route::get('/services/{id}/photos', [CustomerServiceController::class, 'photos']);
 
         Route::get('/quotations', [CustomerQuotationController::class, 'index']);
         Route::get('/quotations/{id}', [CustomerQuotationController::class, 'show']);
