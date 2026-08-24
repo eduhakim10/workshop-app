@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Helpers\QuotationPricing;
 use App\Models\CategoryItem;
 use App\Models\Item;
+use App\Models\PortalServiceStatus;
 use App\Models\Service;
 use App\Models\ServiceGroup;
 use Illuminate\Support\Carbon;
@@ -52,89 +53,88 @@ class ServicePresenter
     }
 
     /**
-     * Customer portal service progress (4 steps):
-     * 1 Kendaraan Diterima (auto, foto before) -> 2 Antrian (auto saat move to service)
-     * -> 3 Dikerjakan (admin) -> 4 Finishgood/Selesai (admin + foto after).
+     * Customer portal service progress from master portal_service_statuses.
+     * Admin sets portal_service_status_id on the Services form (Dikerjakan / Finishgood).
+     * Antrian is auto-set on Move to Service; Kendaraan Diterima may be auto-set from SR/photos.
      */
     public static function serviceProgress(Service $s): array
     {
-        $status = (string) $s->status;
-        $hasBeforePhotos = self::hasPhotos($s, 'before');
-        $hasAfterPhotos = self::hasPhotos($s, 'after');
-        $vehicleReceived = $hasBeforePhotos || ! empty($s->service_request_id);
-        $inQueue = (int) $s->stage === 2;
-        $inProgress = in_array($status, ['In Progress', 'Pending Parts', 'On Hold'], true);
-        $finished = $status === 'Completed' || $hasAfterPhotos;
+        $masters = PortalServiceStatus::query()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->get();
 
-        if ($finished) {
-            $step = 4;
-            $label = 'Selesai';
-            $badge = ['label' => 'Selesai', 'color' => 'success'];
-        } elseif ($inProgress) {
-            $step = 3;
-            $label = 'Dikerjakan';
-            $badge = ['label' => 'Dikerjakan', 'color' => 'warning'];
-        } elseif ($inQueue) {
-            $step = 2;
-            $label = 'Antrian';
-            $badge = ['label' => 'Antrian', 'color' => 'info'];
-        } elseif ($vehicleReceived) {
-            $step = 1;
-            $label = 'Kendaraan Diterima';
-            $badge = ['label' => 'Diterima', 'color' => 'gray'];
-        } else {
-            $step = 1;
-            $label = 'Kendaraan Diterima';
-            $badge = ['label' => 'Menunggu', 'color' => 'gray'];
+        $current = $s->relationLoaded('portalServiceStatus')
+            ? $s->portalServiceStatus
+            : $s->portalServiceStatus()->first();
+
+        // Fallback for legacy rows without portal_service_status_id
+        if (! $current) {
+            $current = self::inferPortalStatus($s, $masters);
         }
+
+        $step = (int) ($current?->sort_order ?? 1);
+        $label = $current?->name ?? 'Kendaraan Diterima';
+        $badge = [
+            'label' => $label,
+            'color' => $current?->badge_color ?? 'gray',
+        ];
 
         $beforeCount = self::photoCount($s, 'before');
         $afterCount = self::photoCount($s, 'after');
+        $maxStep = (int) ($masters->max('sort_order') ?: 1);
+
+        $steps = $masters->map(function (PortalServiceStatus $master) use ($step, $beforeCount, $afterCount, $maxStep) {
+            $order = (int) $master->sort_order;
+            $action = $master->clickable_action;
+            $photoCount = match ($action) {
+                'before_photos' => $beforeCount,
+                'after_photos' => $afterCount,
+                default => 0,
+            };
+            $clickable = filled($action) && $photoCount > 0;
+            $isFinal = $order === $maxStep;
+
+            return [
+                'no' => $order,
+                'label' => $master->name,
+                'done' => $step > $order || ($isFinal && $step >= $order),
+                'active' => $step === $order && ! $isFinal,
+                'clickable' => $clickable,
+                'action' => $clickable ? $action : null,
+                'photo_count' => $photoCount,
+            ];
+        })->values()->all();
 
         return [
             'step' => $step,
             'step_label' => $label,
-            'total_steps' => 4,
-            'steps' => [
-                [
-                    'no' => 1,
-                    'label' => 'Kendaraan Diterima',
-                    'done' => $vehicleReceived,
-                    'active' => $step === 1,
-                    'clickable' => $beforeCount > 0,
-                    'action' => $beforeCount > 0 ? 'before_photos' : null,
-                    'photo_count' => $beforeCount,
-                ],
-                [
-                    'no' => 2,
-                    'label' => 'Antrian',
-                    'done' => $step > 2,
-                    'active' => $step === 2,
-                    'clickable' => false,
-                    'action' => null,
-                    'photo_count' => 0,
-                ],
-                [
-                    'no' => 3,
-                    'label' => 'Dikerjakan',
-                    'done' => $step > 3,
-                    'active' => $step === 3,
-                    'clickable' => false,
-                    'action' => null,
-                    'photo_count' => 0,
-                ],
-                [
-                    'no' => 4,
-                    'label' => 'Finishgood',
-                    'done' => $finished,
-                    'active' => $step === 4 && ! $finished,
-                    'clickable' => $afterCount > 0,
-                    'action' => $afterCount > 0 ? 'after_photos' : null,
-                    'photo_count' => $afterCount,
-                ],
-            ],
+            'total_steps' => max(count($steps), 1),
+            'steps' => $steps,
             'badge' => $badge,
         ];
+    }
+
+    /**
+     * @param  \Illuminate\Support\Collection<int, PortalServiceStatus>  $masters
+     */
+    private static function inferPortalStatus(Service $s, $masters): ?PortalServiceStatus
+    {
+        $byCode = $masters->keyBy('code');
+
+        if (self::hasPhotos($s, 'after')) {
+            return $byCode->get('finishgood');
+        }
+
+        if ((int) $s->stage === 2) {
+            return $byCode->get('antrian');
+        }
+
+        if (self::hasPhotos($s, 'before') || ! empty($s->service_request_id)) {
+            return $byCode->get('kendaraan_diterima');
+        }
+
+        return $byCode->get('kendaraan_diterima') ?? $masters->first();
     }
 
     /**

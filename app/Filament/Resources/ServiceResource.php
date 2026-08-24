@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Forms\Components\Repeater;
 use App\Models\CategoryService;
+use App\Models\PortalServiceStatus;
 use App\Models\ServiceGroup;
 use Filament\Forms\Components\Placeholder;
 
@@ -142,6 +143,19 @@ class ServiceResource extends Resource
                         'Cancelled' => 'Cancelled',
                     ])
                     ->required(),
+
+                Select::make('portal_service_status_id')
+                    ->label('Status Service Portal')
+                    ->options(
+                        PortalServiceStatus::query()
+                            ->where('is_active', true)
+                            ->orderBy('sort_order')
+                            ->pluck('name', 'id')
+                    )
+                    ->searchable()
+                    ->preload()
+                    ->helperText('Tahapan yang tampil di dashboard Customer Portal. Antrian di-set otomatis saat Move to Service; Dikerjakan & Finishgood diubah di sini.')
+                    ->nullable(),
 
                 Textarea::make('notes')->label('Notes')->columnSpanFull(),
 
@@ -361,6 +375,12 @@ class ServiceResource extends Resource
                         default       => 'gray',
                     })
                     ->sortable(),
+                TextColumn::make('portalServiceStatus.name')
+                    ->label('Status Portal')
+                    ->badge()
+                    ->color(fn ($record) => $record->portalServiceStatus?->badge_color ?? 'gray')
+                    ->placeholder('-')
+                    ->toggleable(),
             ])
             ->filters([
                 Filter::make('license_plate')

@@ -42,6 +42,11 @@ class EditQuotations extends EditRecord
                     $quotation->updated_at = now();
                     $quotation->created_at = now();
 
+                    $antrianId = \App\Models\PortalServiceStatus::idByCode('antrian');
+                    if ($antrianId) {
+                        $quotation->portal_service_status_id = $antrianId;
+                    }
+
                     $itemsOffer = $quotation->items_offer;
 
                     // Kalau masih string JSON → decode
@@ -111,6 +116,10 @@ class EditQuotations extends EditRecord
                 ->requiresConfirmation()
                 ->action(function () {
                     $this->record->stage = 2;
+                    $antrianId = \App\Models\PortalServiceStatus::idByCode('antrian');
+                    if ($antrianId) {
+                        $this->record->portal_service_status_id = $antrianId;
+                    }
                     $this->record->save();
 
                     $this->notify('success', 'Quotation approved as service.');

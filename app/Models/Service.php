@@ -28,6 +28,7 @@ class Service extends Model
         'service_start_time',
         'service_due_time',
         'status',
+        'portal_service_status_id',
         'notes',
         'items',
         'items_offer',
@@ -99,6 +100,11 @@ class Service extends Model
     {
         return $this->belongsTo(CategoryService::class);
     }
+
+    public function portalServiceStatus()
+    {
+        return $this->belongsTo(PortalServiceStatus::class);
+    }
     public function assignTo()
     {
         return $this->belongsTo(Employee::class, 'assign_to', 'id');
@@ -156,12 +162,24 @@ class Service extends Model
                 $sr = \App\Models\ServiceRequest::find($service->service_request_id);
                 $service->sr_number = $sr?->sr_number;
             }
+
+            if (empty($service->portal_service_status_id) && $service->service_request_id) {
+                $service->portal_service_status_id = PortalServiceStatus::idByCode('kendaraan_diterima');
+            }
         });
 
         static::updating(function ($service) {
             if ($service->service_request_id) {
                 $sr = \App\Models\ServiceRequest::find($service->service_request_id);
                 $service->sr_number = $sr?->sr_number;
+            }
+
+            if (
+                empty($service->portal_service_status_id)
+                && $service->isDirty('service_request_id')
+                && $service->service_request_id
+            ) {
+                $service->portal_service_status_id = PortalServiceStatus::idByCode('kendaraan_diterima');
             }
         });
     }

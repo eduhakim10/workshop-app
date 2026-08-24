@@ -74,7 +74,7 @@ class DashboardController extends Controller
 
         $progress = (clone $base())
             ->where('stage', 2)
-            ->with(['vehicle', 'beforePhotos', 'afterPhotos'])
+            ->with(['vehicle', 'beforePhotos', 'afterPhotos', 'portalServiceStatus'])
             ->orderByDesc('updated_at')
             ->limit(10)
             ->get()
