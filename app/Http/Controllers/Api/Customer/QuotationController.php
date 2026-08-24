@@ -29,6 +29,7 @@ class QuotationController extends Controller
             ->with([
                 'vehicle:id,brand,model,license_plate',
                 'categoryService:id,name',
+                'portalServiceStatus',
             ])
             ->orderByDesc('created_at_offer')
             ->orderByDesc('created_at')
@@ -51,10 +52,11 @@ class QuotationController extends Controller
                 'serviceRequest',
                 'preparedBy',
                 'afterPhotos',
+                'portalServiceStatus',
             ])
             ->findOrFail($id);
 
-        $status = ServicePresenter::quotationStatus($s);
+        $status = ServicePresenter::portalStatusBadge($s);
         $vehicle = ServicePresenter::vehicleLabel($s);
         $createdAt = $s->created_at_offer
             ? Carbon::parse($s->created_at_offer)
@@ -70,7 +72,9 @@ class QuotationController extends Controller
                 'sr_number' => $s->sr_number ?: optional($sr)->sr_number,
                 'attn' => $s->attn_quotation,
                 'status' => $status,
-                'quotation_status' => $status,
+                'can_upload_po' => ServicePresenter::canUploadPo($s),
+                'is_rejected' => ServicePresenter::isQuotationRejected($s),
+                'has_po_file' => ServicePresenter::hasCustomerPoUpload($s),
                 'vehicle' => $vehicle,
                 'category' => optional($s->categoryService)->name
                     ?: $s->damage_classification
@@ -166,7 +170,7 @@ class QuotationController extends Controller
 
         return response()->json([
             'message' => 'PO berhasil diupload. Penawaran disetujui.',
-            'data' => $this->row($service->fresh(['vehicle', 'categoryService'])),
+            'data' => $this->row($service->fresh(['vehicle', 'categoryService', 'portalServiceStatus'])),
         ]);
     }
 
@@ -179,7 +183,7 @@ class QuotationController extends Controller
 
     private function row(Service $s): array
     {
-        $status = ServicePresenter::quotationStatus($s);
+        $status = ServicePresenter::portalStatusBadge($s);
         $vehicle = ServicePresenter::vehicleLabel($s);
         $date = $s->created_at_offer ? Carbon::parse($s->created_at_offer) : $s->created_at;
         $offer = (string) ($s->offer_number ?? '');
@@ -198,6 +202,9 @@ class QuotationController extends Controller
             'date' => optional($date)->toDateString(),
             'amount' => (float) ($s->amount_offer_revision ?: $s->amount_offer),
             'status' => $status,
+            'can_upload_po' => ServicePresenter::canUploadPo($s),
+            'is_rejected' => ServicePresenter::isQuotationRejected($s),
+            'has_po_file' => ServicePresenter::hasCustomerPoUpload($s),
             'stage' => (int) $s->stage,
             'po_number' => $s->po_number,
             'po_date' => $s->po_date ? Carbon::parse($s->po_date)->toDateString() : null,

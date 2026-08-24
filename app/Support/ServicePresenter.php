@@ -58,6 +58,44 @@ class ServicePresenter
         return filled($s->po_file);
     }
 
+    public static function isQuotationRejected(Service $s): bool
+    {
+        return in_array((string) $s->quotation_status, ['Rejected', 'Cancelled'], true);
+    }
+
+    public static function canUploadPo(Service $s): bool
+    {
+        return ! self::isQuotationRejected($s) && ! self::hasCustomerPoUpload($s);
+    }
+
+    /**
+     * Badge for quotation/service rows — sourced from portal_service_statuses master.
+     *
+     * @return array{code: string, label: string, color: string, sort_order: int}
+     */
+    public static function portalStatusBadge(Service $s): array
+    {
+        $masters = PortalServiceStatus::query()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->get();
+
+        $current = $s->relationLoaded('portalServiceStatus')
+            ? $s->portalServiceStatus
+            : $s->portalServiceStatus()->first();
+
+        if (! $current) {
+            $current = self::inferPortalStatus($s, $masters);
+        }
+
+        return [
+            'code' => $current?->code ?? 'kendaraan_diterima',
+            'label' => $current?->name ?? 'Kendaraan Diterima',
+            'color' => $current?->badge_color ?? 'gray',
+            'sort_order' => (int) ($current?->sort_order ?? 1),
+        ];
+    }
+
     /**
      * Customer portal service progress from master portal_service_statuses.
      * Admin sets portal_service_status_id on the Services form (Dikerjakan / Finishgood).
@@ -200,7 +238,7 @@ class ServicePresenter
      */
     public static function quotationDashboardRow(Service $s): array
     {
-        $status = self::quotationStatus($s);
+        $status = self::portalStatusBadge($s);
         $vehicle = self::vehicleLabel($s);
         $date = $s->created_at_offer ? Carbon::parse($s->created_at_offer) : $s->created_at;
 

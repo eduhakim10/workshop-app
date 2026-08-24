@@ -96,7 +96,7 @@ class DashboardController extends Controller
             ->whereIn('stage', [1, 2])
             ->whereNotNull('sr_number')
             ->where('sr_number', '!=', '')
-            ->with(['vehicle:id,brand,model,license_plate'])
+            ->with(['vehicle:id,brand,model,license_plate', 'portalServiceStatus'])
             ->orderByDesc('created_at_offer')
             ->orderByDesc('created_at')
             ->limit(4)
