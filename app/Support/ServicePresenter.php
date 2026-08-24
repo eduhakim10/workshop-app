@@ -19,8 +19,8 @@ class ServicePresenter
 {
     /**
      * Customer-facing quotation status.
-     * Portal flow: Menunggu (belum ada PO) → PO Diupload (customer setuju via upload PO).
-     * Tidak ada langkah approve/reject terpisah di portal.
+     * Portal flow: Menunggu → PO Diupload (hanya jika customer upload file PO via portal).
+     * Nomor PO yang diisi staff saja TIDAK mengaktifkan status PO Diupload.
      */
     public static function quotationStatus(Service $s): array
     {
@@ -35,7 +35,7 @@ class ServicePresenter
             ];
         }
 
-        if (! empty($s->po_number)) {
+        if (self::hasCustomerPoUpload($s)) {
             return [
                 'code' => 'po_diupload',
                 'label' => 'PO Diupload',
@@ -50,6 +50,12 @@ class ServicePresenter
             'color' => 'warning',
             'tab' => 'pending',
         ];
+    }
+
+    /** True only when customer uploaded a PO file through the portal. */
+    public static function hasCustomerPoUpload(Service $s): bool
+    {
+        return filled($s->po_file);
     }
 
     /**
@@ -310,7 +316,7 @@ class ServicePresenter
         $status = self::quotationStatus($s);
         $created = self::formatDateTime($s->created_at_offer ?: $s->created_at);
         $approved = in_array($status['code'], ['disetujui', 'po_diupload'], true);
-        $hasPo = ! empty($s->po_number);
+        $hasPo = self::hasCustomerPoUpload($s);
         $inWorkshop = (int) $s->stage === 2;
         $hasAfter = $s->relationLoaded('afterPhotos')
             ? $s->afterPhotos->isNotEmpty()

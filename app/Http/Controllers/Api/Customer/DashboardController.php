@@ -49,13 +49,13 @@ class DashboardController extends Controller
             ->whereIn('quotation_status', ['Draft', 'Sent', 'Revised'])
             ->count();
 
-        // Penawaran berlangsung = quotation (stage 1), SR sudah ada, PO belum diupload
+        // Penawaran berlangsung = quotation (stage 1), SR sudah ada, customer belum upload PO
         $penawaranBerlangsung = (clone $base())
             ->where('stage', 1)
             ->whereNotNull('sr_number')
             ->where('sr_number', '!=', '')
             ->where(function ($q) {
-                $q->whereNull('po_number')->orWhere('po_number', '');
+                $q->whereNull('po_file')->orWhere('po_file', '');
             })
             ->count();
 
@@ -68,8 +68,8 @@ class DashboardController extends Controller
             ->count();
 
         $totalPo = (clone $base())
-            ->whereNotNull('po_number')
-            ->where('po_number', '!=', '')
+            ->whereNotNull('po_file')
+            ->where('po_file', '!=', '')
             ->count();
 
         $progress = (clone $base())
