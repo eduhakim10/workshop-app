@@ -47,7 +47,13 @@ class ServiceRequest extends Model
     {
         return $this->hasMany(Service::class);
     }
-     public function creator()
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /** Alias used by print blades; includes linked employee for signature. */
+    public function createdBy()
     {
         return $this->belongsTo(User::class, 'created_by');
     }

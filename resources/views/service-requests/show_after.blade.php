@@ -79,19 +79,29 @@
         </table>
       </div>
 
+@php
+  $creatorUser = $serviceRequest->createdBy ?? $serviceRequest->creator;
+  $creatorEmployee = $creatorUser?->relationLoaded('employee')
+      ? $creatorUser->employee
+      : $creatorUser?->employee()->first();
+  $creatorName = $creatorEmployee?->name ?? $creatorUser?->name ?? '................';
+  $creatorPosition = $creatorEmployee?->position ?? '';
+  $creatorSigSrc = \App\Support\PublicMedia::src($creatorEmployee?->signature);
+  $customerSigSrc = \App\Support\PublicMedia::src($serviceRequest->customer_signature ?? null);
+@endphp
       <!-- Kolom Tanda Tangan -->
       <div style="width:30%; text-align:center; font-size:12px;">
 
         <p><strong>Dibuat Oleh</strong></p>
 
-        @if($serviceRequest->createdBy?->signature)
-          <img src="{{ url(Storage::url($serviceRequest->createdBy->signature)) }}" style="height:60px;">
+        @if($creatorSigSrc)
+          <img src="{{ $creatorSigSrc }}" style="height:60px;" alt="TTD">
         @else
           <div style="height:60px;">(TTD)</div>
         @endif
 
-        <u>{{ $serviceRequest->createdBy?->name ?? '................' }}</u><br>
-        {{ $serviceRequest->createdBy?->position ?? '' }}
+        <u>{{ $creatorName }}</u><br>
+        {{ $creatorPosition }}
 
         <p style="margin:10px 0;">{{ \Carbon\Carbon::parse($serviceRequest->created_at)->translatedFormat('d F Y') }}</p>
 
@@ -99,8 +109,8 @@
 
         <p><strong>Disetujui Oleh Customer</strong></p>
 
-        @if($serviceRequest->customer_signature)
-          <img src="{{ url(Storage::url($serviceRequest->customer_signature)) }}" style="height:60px;">
+        @if($customerSigSrc)
+          <img src="{{ $customerSigSrc }}" style="height:60px;" alt="TTD customer">
         @else
           <div style="height:60px;"></div>
         @endif
@@ -119,16 +129,9 @@
     <div class="photo-grid">
       @foreach ($serviceRequest->photos as $photo)
         @php
-          $path = $photo->file_path;
-          if (!$path) {
-              $photoUrl = asset('images/no-image.png');
-          } elseif (Str::startsWith($path, ['http://','https://'])) {
-              $photoUrl = $path;
-          } else {
-              $photoUrl = url(Storage::url($path));
-          }
+          $photoUrl = \App\Support\PublicMedia::src($photo->file_path) ?: asset('images/no-image.png');
         @endphp
-        <img src="{{ $photoUrl }}">
+        <img src="{{ $photoUrl }}" alt="Foto">
       @endforeach
     </div>
 

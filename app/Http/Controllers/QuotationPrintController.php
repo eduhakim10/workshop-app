@@ -11,6 +11,8 @@ class QuotationPrintController extends Controller
             return redirect()->back()->with('info', 'Silakan isi item penawaran terlebih dahulu.');
         }
 
+        $service->loadMissing(['customer', 'vehicle', 'preparedBy']);
+
         return view('prints.quotation-overview', compact('service'));
     }
 
@@ -20,6 +22,8 @@ class QuotationPrintController extends Controller
             return redirect()->back()->with('info', 'Silakan isi item penawaran terlebih dahulu.');
         }
 
+        $service->loadMissing(['customer', 'vehicle', 'preparedBy']);
+
         return view('prints.quotation-detail', compact('service'));
-    } 
+    }
 }

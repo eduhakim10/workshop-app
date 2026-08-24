@@ -52,7 +52,8 @@ class ServiceController extends Controller
         $serviceRequest = ServiceRequest::with([
             'customer',
             'vehicle',
-            'creator',
+            'creator.employee',
+            'createdBy.employee',
             'damages' => fn ($q) => $q->where('services_request_damages.type', $damageType),
             'photos' => fn ($q) => $q->where('type', $type),
         ])->findOrFail($service->service_request_id);
@@ -61,9 +62,6 @@ class ServiceController extends Controller
             (int) $serviceRequest->customer_id === (int) $request->user()->customer_id,
             403
         );
-
-        // Blade expects createdBy; model relation is creator.
-        $serviceRequest->setRelation('createdBy', $serviceRequest->creator);
 
         return $type === 'before'
             ? view('service-requests.show', compact('serviceRequest'))

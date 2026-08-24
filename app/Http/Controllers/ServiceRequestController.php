@@ -15,6 +15,8 @@ class ServiceRequestController extends Controller
         $serviceRequest = ServiceRequest::with([
             'customer',
             'vehicle',
+            'creator.employee',
+            'createdBy.employee',
             'damages' => function($query) {
                 $query->where('type', 'before'); // filter type=after
             },      // relasi ke services_request_damages
@@ -32,6 +34,8 @@ class ServiceRequestController extends Controller
         $serviceRequest = ServiceRequest::with([
             'customer',
             'vehicle',
+            'creator.employee',
+            'createdBy.employee',
             'damages',      // relasi ke services_request_damages
             'photos' => function($query) {
                 $query->where('type', 'after'); // filter type=after

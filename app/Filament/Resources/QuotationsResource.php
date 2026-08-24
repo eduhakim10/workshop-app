@@ -162,7 +162,9 @@ class QuotationsResource extends Resource
 
                 Select::make('prepared_by')
                     ->label('Prepared by')
-                    ->relationship('employee', 'name')
+                    ->relationship('preparedBy', 'name')
+                    ->searchable()
+                    ->preload()
                     ->required(),
 
                 Select::make('quotation_status')
@@ -176,6 +178,25 @@ class QuotationsResource extends Resource
                         'Cancelled' => 'Cancelled',
                     ])
                     ->required(),
+
+                Placeholder::make('customer_po_info')
+                    ->label('PO Customer (upload portal)')
+                    ->content(function (?Service $record) {
+                        if (! $record || ! filled($record->po_file)) {
+                            return new HtmlString('<span class="text-gray-500">Belum ada PO yang diupload customer.</span>');
+                        }
+
+                        $number = e($record->po_number ?: '-');
+                        $date = $record->po_date
+                            ? e(\Illuminate\Support\Carbon::parse($record->po_date)->format('d/m/Y'))
+                            : '-';
+
+                        return new HtmlString(
+                            "<div><strong>No. PO:</strong> {$number}<br><strong>Tanggal:</strong> {$date}<br>"
+                            . '<span class="text-sm text-primary-600">Gunakan tombol Download PO di header untuk unduh file.</span></div>'
+                        );
+                    })
+                    ->columnSpanFull(),
 
                 TextInput::make('payment_terms')
                     ->label('Payment Terms')

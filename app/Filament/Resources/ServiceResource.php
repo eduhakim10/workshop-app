@@ -94,6 +94,25 @@ class ServiceResource extends Resource
                     ->label('PO Number')
                     ->required(),
 
+                DatePicker::make('po_date')
+                    ->label('PO Date (customer)')
+                    ->disabled()
+                    ->dehydrated(false),
+
+                Placeholder::make('po_file_download')
+                    ->label('PO File Customer')
+                    ->content(function (?\App\Models\Service $record) {
+                        if (! $record || ! filled($record->po_file)) {
+                            return 'Belum diupload customer.';
+                        }
+
+                        $url = \Illuminate\Support\Facades\Storage::disk('public')->url($record->po_file);
+
+                        return new \Illuminate\Support\HtmlString(
+                            '<a href="' . e($url) . '" target="_blank" class="text-primary-600 underline">Download / buka PO PDF</a>'
+                        );
+                    }),
+
                 Select::make('damage_classification')
                     ->label('Klasifikasi Kerusakan')
                     ->options([
