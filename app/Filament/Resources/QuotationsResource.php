@@ -60,349 +60,358 @@ class QuotationsResource extends Resource
     {
         return $form
             ->schema([
-                Select::make('service_request_id')
-                    ->label('Service Request (SR Number)')
-                    ->relationship(
-                        name: 'serviceRequest',
-                        titleAttribute: 'sr_number'
-                    )
-                    ->options(function () {
-                        $usedSrIds = \App\Models\Service::whereNotNull('service_request_id')
-                            ->pluck('service_request_id')
-                            ->unique()
-                            ->toArray();
-
-                        return \App\Models\ServiceRequest::whereNotIn('id', $usedSrIds)
-                            ->with(['customer', 'vehicle'])
-                            ->get()
-                            ->mapWithKeys(fn($sr) => [
-                                $sr->id => ($sr->sr_number ?? 'No SR')
-                                    . ' - ' . ($sr->customer?->name ?? 'No Customer')
-                                    . ' - ' . ($sr->vehicle?->license_plate ?? 'No Vehicle')
-                            ])
-                            ->toArray();
-                    })
-                    ->searchable()
-                    ->preload()
-                    ->reactive()
-                    ->afterStateUpdated(function ($state, callable $set) {
-                        if ($state) {
-                            $sr = \App\Models\ServiceRequest::with(['customer', 'vehicle'])->find($state);
-
-                            $set('customer_id', $sr?->customer?->id);
-                            $set('vehicle_id', $sr?->vehicle?->id);
-                            $set('notes_before', $sr?->notes);
-                        } else {
-                            $set('customer_id', null);
-                            $set('vehicle_id', null);
-                            $set('notes_before', null);
-                        }
-                    })
-                    ->suffixAction(
-                        \Filament\Forms\Components\Actions\Action::make('preview')
-                            ->icon('heroicon-o-eye')
-                            ->label('Preview')
-                            ->url(fn ($state) => $state
-                                ? route('service-requests.show', $state)
-                                : null, true
-                            )
-                            ->visible(fn ($state) => filled($state))
-                    )
-                    ->required(),
-
-                Select::make('customer_id')
-                    ->label('Customer')
-                    ->relationship('customer', 'name')
-                    ->searchable()
-                    ->disabled()
-                    ->dehydrated()
-                    ->required(),
-
-                Select::make('vehicle_id')
-                    ->label('Vehicle')
-                    ->relationship('vehicle', 'license_plate')
-                    ->searchable()
-                    ->disabled()
-                    ->dehydrated()
-                    ->required(),
-
-                Select::make('location_id')
-                    ->label('Location')
-                    ->relationship('location', 'name')
-                    ->required(),
-
-                TextInput::make('offer_number')
-                    ->label('Offer Number')
-                    ->default(fn () => OfferHelper::generateOfferNumber())
-                    ->required()
-                    ->unique(
-                        table: Service::class,
-                        column: 'offer_number',
-                        ignoreRecord: true
-                    )
-                    ->validationMessages([
-                        'unique' => 'Nomor penawaran sudah digunakan. Silakan masukkan nomor lain.',
-                    ]),
-
-                TextInput::make('attn_quotation')
-                    ->label('Attn')
-                    ->placeholder('Person to attention for this quotation')
-                    ->columnSpanFull(),
-
-                // Klasifikasi Kerusakan: Ringan / Sedang / Berat
-                Select::make('damage_classification')
-                    ->label('Klasifikasi Kerusakan')
-                    ->options([
-                        'Ringan' => 'Ringan',
-                        'Sedang' => 'Sedang',
-                        'Berat'  => 'Berat',
-                    ])
-                    ->native(false)
-                    ->placeholder('Pilih klasifikasi kerusakan'),
-
-                Select::make('prepared_by')
-                    ->label('Prepared by')
-                    ->relationship('preparedBy', 'name')
-                    ->searchable()
-                    ->preload()
-                    ->required(),
-
-                Select::make('quotation_status')
-                    ->label('Quotation Status')
-                    ->options([
-                        'Draft'     => 'Draft',
-                        'Sent'      => 'Sent',
-                        'Revised'   => 'Revised',
-                        'Accepted'  => 'Accepted',
-                        'Rejected'  => 'Rejected',
-                        'Cancelled' => 'Cancelled',
-                    ])
-                    ->required(),
-
-                Placeholder::make('customer_po_info')
-                    ->label('PO Customer (upload portal)')
-                    ->content(function (?Service $record) {
-                        if (! $record || ! filled($record->po_file)) {
-                            return new HtmlString('<span class="text-gray-500">Belum ada PO yang diupload customer.</span>');
-                        }
-
-                        $number = e($record->po_number ?: '-');
-                        $date = $record->po_date
-                            ? e(\Illuminate\Support\Carbon::parse($record->po_date)->format('d/m/Y'))
-                            : '-';
-
-                        return new HtmlString(
-                            "<div><strong>No. PO:</strong> {$number}<br><strong>Tanggal:</strong> {$date}<br>"
-                            . '<span class="text-sm text-primary-600">Gunakan tombol Download PO di header untuk unduh file.</span></div>'
-                        );
-                    })
-                    ->columnSpanFull(),
-
-                TextInput::make('payment_terms')
-                    ->label('Payment Terms')
-                    ->default('50% Down Payment, 50% after completion')
-                    ->columnSpanFull(),
-                TextInput::make('delivery_terms')
-                    ->label('Delivery Terms')
-                    ->default('Base on Schedule MTI')
-                    ->columnSpanFull(),
-                TextInput::make('validity_terms')
-                    ->label('Validity Terms')
-                    ->default('One month after this quotation, this price can be change anythime without price notice')
-                    ->columnSpanFull(),
-
-                Textarea::make('notes')
-                    ->label('Notes')
-                    ->columnSpanFull(),
-
-                Textarea::make('notes_before')
-                    ->label('Notes Before')
-                    ->afterStateHydrated(function ($state, $set, $record) {
-                        if (!$state && $record?->service_request_id) {
-                            $sr = \App\Models\ServiceRequest::find($record->service_request_id);
-                            $set('notes_before', $sr?->notes);
-                        }
-                    })
-                    ->disabled()
-                    ->dehydrated()
-                    ->columnSpanFull(),
-
-                // ===== Repeater items_offer (group + items) =====
-                // NB: recalc dilakukan via afterStateUpdated di outer Repeater
-                // (Filament akan memantulkan perubahan inner state ke outer).
-                Repeater::make('items_offer')
-                    ->label('Service Groups')
-                    ->reactive()
-                    ->afterStateUpdated(fn (callable $get, callable $set) => self::recalcAndSet($get, $set))
+                Forms\Components\Section::make('Data utama (wajib)')
+                    ->description('Isi dulu semua field bertanda * merah di bagian ini.')
+                    ->columns(3)
                     ->schema([
-                        Select::make('service_group_id')
-                            ->label('Service Group')
-                            ->options(ServiceGroup::pluck('name', 'id'))
+                        Select::make('service_request_id')
+                            ->label('Service Request (SR Number)')
+                            ->relationship(
+                                name: 'serviceRequest',
+                                titleAttribute: 'sr_number'
+                            )
+                            ->options(function () {
+                                $usedSrIds = \App\Models\Service::whereNotNull('service_request_id')
+                                    ->pluck('service_request_id')
+                                    ->unique()
+                                    ->toArray();
+
+                                return \App\Models\ServiceRequest::whereNotIn('id', $usedSrIds)
+                                    ->with(['customer', 'vehicle'])
+                                    ->get()
+                                    ->mapWithKeys(fn ($sr) => [
+                                        $sr->id => ($sr->sr_number ?? 'No SR')
+                                            . ' - ' . ($sr->customer?->name ?? 'No Customer')
+                                            . ' - ' . ($sr->vehicle?->license_plate ?? 'No Vehicle'),
+                                    ])
+                                    ->toArray();
+                            })
+                            ->searchable()
+                            ->preload()
+                            ->reactive()
+                            ->afterStateUpdated(function ($state, callable $set) {
+                                if ($state) {
+                                    $sr = \App\Models\ServiceRequest::with(['customer', 'vehicle'])->find($state);
+
+                                    $set('customer_id', $sr?->customer?->id);
+                                    $set('vehicle_id', $sr?->vehicle?->id);
+                                    $set('notes_before', $sr?->notes);
+                                } else {
+                                    $set('customer_id', null);
+                                    $set('vehicle_id', null);
+                                    $set('notes_before', null);
+                                }
+                            })
+                            ->suffixAction(
+                                \Filament\Forms\Components\Actions\Action::make('preview')
+                                    ->icon('heroicon-o-eye')
+                                    ->label('Preview')
+                                    ->url(fn ($state) => $state
+                                        ? route('service-requests.show', $state)
+                                        : null, true
+                                    )
+                                    ->visible(fn ($state) => filled($state))
+                            )
+                            ->required()
+                            ->columnSpan(2),
+
+                        Select::make('location_id')
+                            ->label('Location')
+                            ->relationship('location', 'name')
+                            ->required(),
+
+                        Select::make('customer_id')
+                            ->label('Customer')
+                            ->relationship('customer', 'name')
+                            ->searchable()
+                            ->disabled()
+                            ->dehydrated()
+                            ->required(),
+
+                        Select::make('vehicle_id')
+                            ->label('Vehicle')
+                            ->relationship('vehicle', 'license_plate')
+                            ->searchable()
+                            ->disabled()
+                            ->dehydrated()
+                            ->required(),
+
+                        TextInput::make('offer_number')
+                            ->label('Offer Number')
+                            ->default(fn () => OfferHelper::generateOfferNumber())
+                            ->required()
+                            ->unique(
+                                table: Service::class,
+                                column: 'offer_number',
+                                ignoreRecord: true
+                            )
+                            ->validationMessages([
+                                'unique' => 'Nomor penawaran sudah digunakan. Silakan masukkan nomor lain.',
+                            ]),
+
+                        Select::make('prepared_by')
+                            ->label('Prepared by')
+                            ->relationship('preparedBy', 'name')
                             ->searchable()
                             ->preload()
                             ->required(),
 
-                        TextInput::make('qty')
-                            ->label('Group Qty')
-                            ->numeric()
-                            ->default(1)
+                        Select::make('quotation_status')
+                            ->label('Quotation Status')
+                            ->options([
+                                'Draft' => 'Draft',
+                                'Sent' => 'Sent',
+                                'Revised' => 'Revised',
+                                'Accepted' => 'Accepted',
+                                'Rejected' => 'Rejected',
+                                'Cancelled' => 'Cancelled',
+                            ])
                             ->required(),
+                    ]),
 
-                        // Group Price otomatis dari sum(line subtotal)
-                        FormFields::applyRupiahMask(TextInput::make('price'))
-                            ->label('Group Price')
+                Forms\Components\Section::make('Informasi tambahan')
+                    ->description('Opsional — bisa diisi setelah data wajib lengkap.')
+                    ->columns(2)
+                    ->collapsed()
+                    ->schema([
+                        TextInput::make('attn_quotation')
+                            ->label('Attn')
+                            ->placeholder('Person to attention for this quotation')
+                            ->columnSpanFull(),
+
+                        Select::make('damage_classification')
+                            ->label('Klasifikasi Kerusakan')
+                            ->options([
+                                'Ringan' => 'Ringan',
+                                'Sedang' => 'Sedang',
+                                'Berat' => 'Berat',
+                            ])
+                            ->native(false)
+                            ->placeholder('Pilih klasifikasi kerusakan'),
+
+                        Placeholder::make('customer_po_info')
+                            ->label('PO Customer (upload portal)')
+                            ->content(function (?Service $record) {
+                                if (! $record || ! filled($record->po_file)) {
+                                    return new HtmlString('<span class="text-gray-500">Belum ada PO yang diupload customer.</span>');
+                                }
+
+                                $number = e($record->po_number ?: '-');
+                                $date = $record->po_date
+                                    ? e(\Illuminate\Support\Carbon::parse($record->po_date)->format('d/m/Y'))
+                                    : '-';
+
+                                return new HtmlString(
+                                    "<div><strong>No. PO:</strong> {$number}<br><strong>Tanggal:</strong> {$date}<br>"
+                                    . '<span class="text-sm text-primary-600">Gunakan tombol Download PO di header untuk unduh file.</span></div>'
+                                );
+                            })
+                            ->columnSpanFull(),
+
+                        TextInput::make('payment_terms')
+                            ->label('Payment Terms')
+                            ->default('50% Down Payment, 50% after completion')
+                            ->columnSpanFull(),
+                        TextInput::make('delivery_terms')
+                            ->label('Delivery Terms')
+                            ->default('Base on Schedule MTI')
+                            ->columnSpanFull(),
+                        TextInput::make('validity_terms')
+                            ->label('Validity Terms')
+                            ->default('One month after this quotation, this price can be change anythime without price notice')
+                            ->columnSpanFull(),
+
+                        Textarea::make('notes')
+                            ->label('Notes')
+                            ->columnSpanFull(),
+
+                        Textarea::make('notes_before')
+                            ->label('Notes Before')
+                            ->afterStateHydrated(function ($state, $set, $record) {
+                                if (! $state && $record?->service_request_id) {
+                                    $sr = \App\Models\ServiceRequest::find($record->service_request_id);
+                                    $set('notes_before', $sr?->notes);
+                                }
+                            })
                             ->disabled()
                             ->dehydrated()
-                            ->helperText('Auto-calculated from items.'),
+                            ->columnSpanFull(),
+                    ]),
 
-                        Repeater::make('items')
-                            ->label('Items')
+                Forms\Components\Section::make('Item penawaran (wajib)')
+                    ->description('Minimal 1 group + 1 item. Field bertanda * merah wajib diisi.')
+                    ->schema([
+                        Repeater::make('items_offer')
+                            ->label('Service Groups')
                             ->reactive()
+                            ->afterStateUpdated(fn (callable $get, callable $set) => self::recalcAndSet($get, $set))
                             ->schema([
-                                Select::make('category_item_id')
-                                    ->label('Item Category')
-                                    ->options(CategoryItem::pluck('name', 'id'))
-                                    ->reactive()
+                                Select::make('service_group_id')
+                                    ->label('Service Group')
+                                    ->options(ServiceGroup::pluck('name', 'id'))
                                     ->searchable()
                                     ->preload()
                                     ->required(),
 
-                                Select::make('item_id')
-                                    ->label('Item')
-                                    ->options(fn (callable $get) =>
-                                        $get('category_item_id')
-                                            ? Item::where('category_item_id', $get('category_item_id'))->pluck('name', 'id')
-                                            : []
-                                    )
-                                    ->reactive()
-                                    ->afterStateUpdated(function ($state, callable $set) {
-                                        if ($state) {
-                                            $item = Item::find($state);
-                                            $set('sales_price', FormFields::formatRupiah($item?->sales_price));
-                                        }
-                                    })
-                                    ->searchable()
-                                    ->preload()
-                                    ->columnSpan(1)
-                                    ->required(),
-
-                                FormFields::applyRupiahMask(TextInput::make('sales_price'))
-                                    ->label('Sales Price')
-                                    ->required(),
-
-                                TextInput::make('quantity')
-                                    ->label('Quantity')
+                                TextInput::make('qty')
+                                    ->label('Group Qty')
                                     ->numeric()
                                     ->default(1)
-                                    ->required()
+                                    ->required(),
+
+                                FormFields::applyRupiahMask(TextInput::make('price'))
+                                    ->label('Group Price')
+                                    ->disabled()
+                                    ->dehydrated()
+                                    ->helperText('Auto-calculated from items.'),
+
+                                Repeater::make('items')
+                                    ->label('Items')
                                     ->reactive()
-                                    ->columnSpan(1)
-                                    ->suffix(fn (callable $get) =>
-                                        optional(Item::find($get('item_id')))->unit ?? 'pcs'
-                                    ),
+                                    ->schema([
+                                        Select::make('category_item_id')
+                                            ->label('Item Category')
+                                            ->options(CategoryItem::pluck('name', 'id'))
+                                            ->reactive()
+                                            ->searchable()
+                                            ->preload()
+                                            ->required(),
 
-                                TextInput::make('discount_percent')
-                                    ->label('Disc (%)')
-                                    ->numeric()
-                                    ->default(0)
-                                    ->minValue(0)
-                                    ->maxValue(100)
-                                    ->suffix('%')
-                                    ->reactive(),
+                                        Select::make('item_id')
+                                            ->label('Item')
+                                            ->options(fn (callable $get) => $get('category_item_id')
+                                                ? Item::where('category_item_id', $get('category_item_id'))->pluck('name', 'id')
+                                                : [])
+                                            ->reactive()
+                                            ->afterStateUpdated(function ($state, callable $set) {
+                                                if ($state) {
+                                                    $item = Item::find($state);
+                                                    $set('sales_price', FormFields::formatRupiah($item?->sales_price));
+                                                }
+                                            })
+                                            ->searchable()
+                                            ->preload()
+                                            ->columnSpan(1)
+                                            ->required(),
 
-                                Placeholder::make('line_subtotal')
-                                    ->label('Jumlah')
-                                    ->content(function (callable $get) {
-                                        $line = QuotationPricing::calcLine([
-                                            'sales_price' => $get('sales_price'),
-                                            'quantity' => $get('quantity'),
-                                            'discount_percent' => $get('discount_percent'),
-                                        ]);
-                                        return 'Rp ' . number_format($line['subtotal'], 2, ',', '.');
-                                    }),
+                                        FormFields::applyRupiahMask(TextInput::make('sales_price'))
+                                            ->label('Sales Price')
+                                            ->required(),
+
+                                        TextInput::make('quantity')
+                                            ->label('Quantity')
+                                            ->numeric()
+                                            ->default(1)
+                                            ->required()
+                                            ->reactive()
+                                            ->columnSpan(1)
+                                            ->suffix(fn (callable $get) => optional(Item::find($get('item_id')))->unit ?? 'pcs'),
+
+                                        TextInput::make('discount_percent')
+                                            ->label('Disc (%)')
+                                            ->numeric()
+                                            ->default(0)
+                                            ->minValue(0)
+                                            ->maxValue(100)
+                                            ->suffix('%')
+                                            ->reactive(),
+
+                                        Placeholder::make('line_subtotal')
+                                            ->label('Jumlah')
+                                            ->content(function (callable $get) {
+                                                $line = QuotationPricing::calcLine([
+                                                    'sales_price' => $get('sales_price'),
+                                                    'quantity' => $get('quantity'),
+                                                    'discount_percent' => $get('discount_percent'),
+                                                ]);
+
+                                                return 'Rp ' . number_format($line['subtotal'], 2, ',', '.');
+                                            }),
+                                    ])
+                                    ->columns(6)
+                                    ->collapsible()
+                                    ->defaultItems(1)
+                                    ->columnSpan('full')
+                                    ->required(),
                             ])
-                            ->columns(6)
+                            ->columns(3)
                             ->collapsible()
                             ->defaultItems(1)
                             ->columnSpan('full')
                             ->required(),
-                    ])
+                    ]),
+
+                Forms\Components\Section::make('PPN & total (wajib)')
+                    ->description('Pilih tipe PPN, lalu cek total / amount offer.')
                     ->columns(3)
-                    ->collapsible()
-                    ->defaultItems(1)
-                    ->columnSpan('full'),
+                    ->schema([
+                        Radio::make('ppn_type')
+                            ->label('Informasi PPN')
+                            ->options(QuotationPricing::ppnTypeOptions())
+                            ->default(QuotationPricing::PPN_NONE)
+                            ->inline()
+                            ->reactive()
+                            ->afterStateUpdated(fn (callable $get, callable $set) => self::recalcAndSet($get, $set))
+                            ->required()
+                            ->columnSpanFull(),
 
-                // ===== Informasi PPN =====
-                Radio::make('ppn_type')
-                    ->label('Informasi PPN')
-                    ->options(QuotationPricing::ppnTypeOptions())
-                    ->default(QuotationPricing::PPN_NONE)
-                    ->inline()
-                    ->reactive()
-                    ->afterStateUpdated(fn (callable $get, callable $set) => self::recalcAndSet($get, $set))
-                    ->required()
-                    ->columnSpanFull(),
+                        TextInput::make('ppn_percent')
+                            ->label('PPN (%)')
+                            ->numeric()
+                            ->default(11)
+                            ->minValue(0)
+                            ->maxValue(100)
+                            ->suffix('%')
+                            ->reactive()
+                            ->afterStateUpdated(fn (callable $get, callable $set) => self::recalcAndSet($get, $set))
+                            ->visible(fn (callable $get) => in_array($get('ppn_type'), [
+                                QuotationPricing::PPN_INCLUSIVE,
+                                QuotationPricing::PPN_EXCLUSIVE,
+                                QuotationPricing::PPN_NOT_LEVIED,
+                            ]))
+                            ->required(fn (callable $get) => in_array($get('ppn_type'), [
+                                QuotationPricing::PPN_INCLUSIVE,
+                                QuotationPricing::PPN_EXCLUSIVE,
+                                QuotationPricing::PPN_NOT_LEVIED,
+                            ])),
 
-                TextInput::make('ppn_percent')
-                    ->label('PPN (%)')
-                    ->numeric()
-                    ->default(11)
-                    ->minValue(0)
-                    ->maxValue(100)
-                    ->suffix('%')
-                    ->reactive()
-                    ->afterStateUpdated(fn (callable $get, callable $set) => self::recalcAndSet($get, $set))
-                    ->visible(fn (callable $get) => in_array($get('ppn_type'), [
-                        QuotationPricing::PPN_INCLUSIVE,
-                        QuotationPricing::PPN_EXCLUSIVE,
-                        QuotationPricing::PPN_NOT_LEVIED,
-                    ]))
-                    ->required(fn (callable $get) => in_array($get('ppn_type'), [
-                        QuotationPricing::PPN_INCLUSIVE,
-                        QuotationPricing::PPN_EXCLUSIVE,
-                        QuotationPricing::PPN_NOT_LEVIED,
-                    ])),
+                        Placeholder::make('rincian_subtotal')
+                            ->label('Subtotal (DPP)')
+                            ->content(fn (callable $get) => 'Rp ' . number_format(self::summarize($get)['subtotal'], 2, ',', '.')),
 
-                // ===== Rincian Transaksi =====
-                Placeholder::make('rincian_subtotal')
-                    ->label('Subtotal (DPP)')
-                    ->content(fn (callable $get) => 'Rp ' . number_format(self::summarize($get)['subtotal'], 2, ',', '.')),
+                        Placeholder::make('rincian_discount')
+                            ->label('Total Diskon')
+                            ->content(fn (callable $get) => 'Rp ' . number_format(self::summarize($get)['discount'], 2, ',', '.')),
 
-                Placeholder::make('rincian_discount')
-                    ->label('Total Diskon')
-                    ->content(fn (callable $get) => 'Rp ' . number_format(self::summarize($get)['discount'], 2, ',', '.')),
+                        Placeholder::make('rincian_ppn')
+                            ->label('PPN')
+                            ->content(function (callable $get) {
+                                $totals = self::summarize($get);
+                                $rateLabel = number_format((float) ($get('ppn_percent') ?? 0), 0);
+                                $typeLabel = QuotationPricing::ppnTypeLabel($get('ppn_type'));
 
-                Placeholder::make('rincian_ppn')
-                    ->label('PPN')
-                    ->content(function (callable $get) {
-                        $totals = self::summarize($get);
-                        $rateLabel = number_format((float) ($get('ppn_percent') ?? 0), 0);
-                        $typeLabel = QuotationPricing::ppnTypeLabel($get('ppn_type'));
+                                return 'Rp ' . number_format($totals['ppn'], 2, ',', '.')
+                                    . ' — ' . $rateLabel . '% (' . $typeLabel . ')';
+                            }),
 
-                        return 'Rp ' . number_format($totals['ppn'], 2, ',', '.')
-                            . ' — ' . $rateLabel . '% (' . $typeLabel . ')';
-                    }),
+                        FormFields::applyRupiahMask(TextInput::make('total_price'))
+                            ->label('Total Price')
+                            ->disabled()
+                            ->dehydrated(),
 
-                FormFields::applyRupiahMask(TextInput::make('total_price'))
-                    ->label('Total Price')
-                    ->disabled()
-                    ->dehydrated()
-                    ->columnSpan(1),
+                        FormFields::applyRupiahMask(TextInput::make('amount_offer'))
+                            ->label('Amount Offer')
+                            ->required()
+                            ->afterStateUpdated(function ($state, callable $set) {
+                                $set('amount_offer_revision', $state);
+                            })
+                            ->helperText('Otomatis mengikuti Total Price. Bisa di-override manual.'),
 
-                FormFields::applyRupiahMask(TextInput::make('amount_offer'))
-                    ->label('Amount Offer')
-                    ->required()
-                    ->afterStateUpdated(function ($state, callable $set) {
-                        $set('amount_offer_revision', $state);
-                    })
-                    ->helperText('Otomatis mengikuti Total Price. Bisa di-override manual.')
-                    ->columnSpan(1),
-
-                FormFields::applyRupiahMask(TextInput::make('amount_offer_revision'))
-                    ->label('Amount Offer Revision')
-                    ->columnSpan(1),
+                        FormFields::applyRupiahMask(TextInput::make('amount_offer_revision'))
+                            ->label('Amount Offer Revision'),
+                    ]),
             ])
-            ->columns(2);
+            ->columns(1);
     }
 
     /**
