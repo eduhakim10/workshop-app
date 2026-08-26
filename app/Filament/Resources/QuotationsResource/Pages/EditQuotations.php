@@ -84,15 +84,20 @@ class EditQuotations extends EditRecord
                         $quotation->portal_service_status_id = $antrianId;
                     }
 
+                    // Status Service (form) otomatis In Progress
+                    $quotation->status = 'In Progress';
+
                     $quotation->save();
 
-                    // Pastikan kolom status portal tersimpan (hindari race/form state menimpa)
+                    // Pastikan kolom status tersimpan (hindari race/form state menimpa)
+                    $forceUpdate = [
+                        'stage' => 2,
+                        'status' => 'In Progress',
+                    ];
                     if ($antrianId) {
-                        \App\Models\Service::whereKey($quotation->id)->update([
-                            'portal_service_status_id' => $antrianId,
-                            'stage' => 2,
-                        ]);
+                        $forceUpdate['portal_service_status_id'] = $antrianId;
                     }
+                    \App\Models\Service::whereKey($quotation->id)->update($forceUpdate);
 
                     Notification::make()
                         ->title('Quotation updated successfully')
@@ -157,6 +162,7 @@ class EditQuotations extends EditRecord
                 ->requiresConfirmation()
                 ->action(function () {
                     $this->record->stage = 2;
+                    $this->record->status = 'In Progress';
                     $this->record->applyQuotationDefaults();
 
                     $antrianId = \App\Models\PortalServiceStatus::idByCode('antrian');
@@ -165,12 +171,14 @@ class EditQuotations extends EditRecord
                     }
                     $this->record->save();
 
+                    $forceUpdate = [
+                        'stage' => 2,
+                        'status' => 'In Progress',
+                    ];
                     if ($antrianId) {
-                        \App\Models\Service::whereKey($this->record->id)->update([
-                            'portal_service_status_id' => $antrianId,
-                            'stage' => 2,
-                        ]);
+                        $forceUpdate['portal_service_status_id'] = $antrianId;
                     }
+                    \App\Models\Service::whereKey($this->record->id)->update($forceUpdate);
 
                     $this->notify('success', 'Quotation approved as service.');
                     $this->redirect(ServiceResource::getUrl());
