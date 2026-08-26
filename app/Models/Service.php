@@ -22,6 +22,8 @@ class Service extends Model
         'work_order_date',
         'invoice_number',
         'invoice_handover_date',
+        'invoice_payment_date',
+        'document_position',
         'assign_to',
         'service_start_date',
         'service_due_date',
@@ -194,5 +196,92 @@ class Service extends Model
             'DATE(COALESCE(services.service_start_date, services.created_at_offer, services.created_at)) BETWEEN ? AND ?',
             [$from, $to]
         );
+    }
+
+    /**
+     * Document Position options on the Services form (value => label).
+     *
+     * @return array<string, string>
+     */
+    public static function documentPositionOptions(): array
+    {
+        return [
+            'pcs' => 'Karawang',
+            'kg' => 'Balaraja',
+            'liters' => 'Cikampek',
+            'Lembar' => 'Karawang Barat',
+            'Meter' => 'MT Haryono',
+        ];
+    }
+
+    /**
+     * Map workshop Location (set on quotation) → Document Position value.
+     */
+    public static function documentPositionFromLocation(?Location $location): ?string
+    {
+        if (! $location || blank($location->name)) {
+            return null;
+        }
+
+        $name = strtolower((string) $location->name);
+
+        return match (true) {
+            str_contains($name, 'karawang') && str_contains($name, 'barat') => 'Lembar',
+            str_contains($name, 'karawang') => 'pcs',
+            str_contains($name, 'balaraja') => 'kg',
+            str_contains($name, 'tangerang') => 'kg',
+            str_contains($name, 'cikampek') => 'liters',
+            str_contains($name, 'haryono') => 'Meter',
+            str_contains($name, 'head') => 'Meter',
+            default => null,
+        };
+    }
+
+    /**
+     * Fill Assign to / Document Position from quotation fields when still empty.
+     * - assign_to ← prepared_by
+     * - document_position ← location
+     */
+    public function applyQuotationDefaults(): self
+    {
+        if (blank($this->assign_to) && filled($this->prepared_by)) {
+            $this->assign_to = $this->prepared_by;
+        }
+
+        if (blank($this->document_position)) {
+            $location = $this->relationLoaded('location')
+                ? $this->location
+                : ($this->location_id ? $this->location()->first() : null);
+
+            $mapped = self::documentPositionFromLocation($location);
+            if ($mapped) {
+                $this->document_position = $mapped;
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * Same defaults for Filament form data arrays (create/edit quotation).
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    public static function applyQuotationDefaultsToFormData(array $data): array
+    {
+        if (blank($data['assign_to'] ?? null) && filled($data['prepared_by'] ?? null)) {
+            $data['assign_to'] = $data['prepared_by'];
+        }
+
+        if (blank($data['document_position'] ?? null) && filled($data['location_id'] ?? null)) {
+            $location = Location::query()->find($data['location_id']);
+            $mapped = self::documentPositionFromLocation($location);
+            if ($mapped) {
+                $data['document_position'] = $mapped;
+            }
+        }
+
+        return $data;
     }
 }

@@ -15,8 +15,28 @@ class EditService extends EditRecord
         return $this->getResource()::getUrl('index'); // Redirect to the list page
     }
 
+    protected function mutateFormDataBeforeFill(array $data): array
+    {
+        // Backfill dari data penawaran jika field Service masih kosong.
+        if (blank($data['assign_to'] ?? null) && filled($data['prepared_by'] ?? null)) {
+            $data['assign_to'] = $data['prepared_by'];
+        }
+
+        if (blank($data['document_position'] ?? null) && filled($data['location_id'] ?? null)) {
+            $location = \App\Models\Location::query()->find($data['location_id']);
+            $mapped = \App\Models\Service::documentPositionFromLocation($location);
+            if ($mapped) {
+                $data['document_position'] = $mapped;
+            }
+        }
+
+        return $data;
+    }
+
     protected function mutateFormDataBeforeSave(array $data): array
     {
+        $data = \App\Models\Service::applyQuotationDefaultsToFormData($data);
+
         return CreateService::applyPricingTotals($data);
     }
 

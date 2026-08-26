@@ -49,16 +49,6 @@ class DashboardController extends Controller
             ->whereIn('quotation_status', ['Draft', 'Sent', 'Revised'])
             ->count();
 
-        // Penawaran berlangsung = quotation (stage 1), SR sudah ada, customer belum upload PO
-        $penawaranBerlangsung = (clone $base())
-            ->where('stage', 1)
-            ->whereNotNull('sr_number')
-            ->where('sr_number', '!=', '')
-            ->where(function ($q) {
-                $q->whereNull('po_file')->orWhere('po_file', '');
-            })
-            ->count();
-
         // Sudah diperbaiki = sama seperti sedang diperbaiki, tapi foto after sudah diupload
         $sudahDiperbaiki = (clone $base())
             ->where('stage', 2)
@@ -67,9 +57,11 @@ class DashboardController extends Controller
             ->whereHas('afterPhotos')
             ->count();
 
-        $totalPo = (clone $base())
-            ->whereNotNull('po_file')
-            ->where('po_file', '!=', '')
+        // Belum ada PO = customer belum upload file PO via portal
+        $belumAdaPo = (clone $base())
+            ->where(function ($q) {
+                $q->whereNull('po_file')->orWhere('po_file', '');
+            })
             ->count();
 
         $progress = (clone $base())
@@ -105,11 +97,10 @@ class DashboardController extends Controller
 
         return response()->json([
             'stats' => [
-                'sedang_diperbaiki' => $sedangDiperbaiki,
                 'sedang_menunggu' => $sedangMenunggu,
-                'penawaran_berlangsung' => $penawaranBerlangsung,
+                'sedang_diperbaiki' => $sedangDiperbaiki,
                 'sudah_diperbaiki' => $sudahDiperbaiki,
-                'total_po' => $totalPo,
+                'belum_ada_po' => $belumAdaPo,
             ],
             'services' => $progress,
             'quotations' => $quotations,

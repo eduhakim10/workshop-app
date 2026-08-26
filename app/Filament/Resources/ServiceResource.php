@@ -97,19 +97,15 @@ class ServiceResource extends Resource
 
                         Select::make('document_position')
                             ->label('Document Position')
-                            ->options([
-                                'pcs' => 'Karawang',
-                                'kg' => 'Balaraja',
-                                'liters' => 'Cikampek',
-                                'Lembar' => 'Karawang Barat',
-                                'Meter' => 'MT Haryono',
-                            ])
-                            ->required(),
+                            ->options(\App\Models\Service::documentPositionOptions())
+                            ->required()
+                            ->helperText('Otomatis dari Location penawaran jika masih kosong.'),
 
                         Select::make('assign_to')
                             ->label('Assign to')
                             ->relationship('employee', 'name')
-                            ->required(),
+                            ->required()
+                            ->helperText('Otomatis dari Prepared by penawaran jika masih kosong.'),
 
                         DatePicker::make('service_start_date')
                             ->label('Service Start Date')
@@ -379,13 +375,21 @@ class ServiceResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('offer_number')->label('Offer Number')->searchable(),
-                TextColumn::make('work_order_number')->label('Work Order Number')->searchable(),
+                TextColumn::make('portalServiceStatus.name')
+                    ->label('Status Portal')
+                    ->badge()
+                    ->color(fn ($record) => $record->portalServiceStatus?->badge_color ?? 'gray')
+                    ->placeholder('-')
+                    ->toggleable(),
+                TextColumn::make('customer.name')->label('Customer')->searchable(),
+                TextColumn::make('vehicle.license_plate')->label('Nomor Polisi')->searchable(),
+                TextColumn::make('location.name')->label('Lokasi Pengerjaan'),
                 TextColumn::make('amount_offer')
                     ->label('Amount Offer')
                     ->formatStateUsing(fn ($state) => $state !== null ? 'Rp ' . number_format((float) $state, 2, ',', '.') : '-')
                     ->searchable(),
                 TextColumn::make('amount_offer_revision')
-                    ->label('Amount Revision')
+                    ->label('Amount Offer Revision')
                     ->formatStateUsing(fn ($state) => $state !== null ? 'Rp ' . number_format((float) $state, 2, ',', '.') : '-')
                     ->searchable(),
                 TextColumn::make('total_price')
@@ -395,9 +399,6 @@ class ServiceResource extends Resource
                 TextColumn::make('damage_classification')
                     ->label('Klasifikasi Kerusakan')
                     ->toggleable(),
-                TextColumn::make('customer.name')->label('Customer')->searchable(),
-                TextColumn::make('vehicle.license_plate')->label('License Plate')->searchable(),
-                TextColumn::make('location.name')->label('Location'),
                 TextColumn::make('employee.name')->label('Assign'),
                 TextColumn::make('duration')
                     ->label('Duration')
@@ -418,12 +419,10 @@ class ServiceResource extends Resource
                         default       => 'gray',
                     })
                     ->sortable(),
-                TextColumn::make('portalServiceStatus.name')
-                    ->label('Status Portal')
-                    ->badge()
-                    ->color(fn ($record) => $record->portalServiceStatus?->badge_color ?? 'gray')
-                    ->placeholder('-')
-                    ->toggleable(),
+                TextColumn::make('work_order_number')
+                    ->label('Work Order Number')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 Filter::make('license_plate')

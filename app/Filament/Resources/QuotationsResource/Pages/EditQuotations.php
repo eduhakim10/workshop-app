@@ -42,6 +42,10 @@ class EditQuotations extends EditRecord
                     $quotation->updated_at = now();
                     $quotation->created_at = now();
 
+                    // Assign to / Document Position biasanya sudah dari penawaran
+                    // (Prepared by / Location) — pastikan terisi saat pindah ke Service.
+                    $quotation->applyQuotationDefaults();
+
                     $antrianId = \App\Models\PortalServiceStatus::idByCode('antrian');
                     if ($antrianId) {
                         $quotation->portal_service_status_id = $antrianId;
@@ -126,7 +130,9 @@ class EditQuotations extends EditRecord
                 $data['updated_at_offer'] = now();
             }
 
-            return CreateQuotations::applyPricingTotals($data);
+            $data = CreateQuotations::applyPricingTotals($data);
+
+            return \App\Models\Service::applyQuotationDefaultsToFormData($data);
         }
         protected function getActions(): array
     {
@@ -137,6 +143,7 @@ class EditQuotations extends EditRecord
                 ->requiresConfirmation()
                 ->action(function () {
                     $this->record->stage = 2;
+                    $this->record->applyQuotationDefaults();
                     $antrianId = \App\Models\PortalServiceStatus::idByCode('antrian');
                     if ($antrianId) {
                         $this->record->portal_service_status_id = $antrianId;

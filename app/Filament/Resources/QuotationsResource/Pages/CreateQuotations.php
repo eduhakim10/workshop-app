@@ -16,7 +16,9 @@ class CreateQuotations extends CreateRecord
         $data['stage'] = 1;
         $data['created_at_offer'] = now();
 
-        return self::applyPricingTotals($data);
+        $data = self::applyPricingTotals($data);
+
+        return \App\Models\Service::applyQuotationDefaultsToFormData($data);
     }
 
     protected function getRedirectUrl(): string
