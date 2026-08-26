@@ -349,73 +349,150 @@ class ServicePresenter
         ];
     }
 
+    /**
+     * Riwayat status di detail penawaran (tanpa alur PO):
+     * 1 Kendaraan Diterima (waktu upload foto before)
+     * 2 Penawaran dibuat
+     * 3 Antrian → 4 Dikerjakan → 5 Finishgood
+     *
+     * @return array<int, array{title: string, time: string, note: ?string, state: string}>
+     */
     public static function quotationTimeline(Service $s): array
     {
-        $status = self::quotationStatus($s);
-        $created = self::formatDateTime($s->created_at_offer ?: $s->created_at);
-        $approved = in_array($status['code'], ['disetujui', 'po_diupload'], true);
-        $hasPo = self::hasCustomerPoUpload($s);
-        $inWorkshop = (int) $s->stage === 2;
-        $hasAfter = $s->relationLoaded('afterPhotos')
-            ? $s->afterPhotos->isNotEmpty()
-            : $s->afterPhotos()->exists();
-        $hasHandover = ! empty($s->handover_date) || ! empty($s->invoice_handover_date);
+        $masters = PortalServiceStatus::query()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->get()
+            ->keyBy('code');
 
-        $steps = [
-            [
-                'title' => 'Penawaran dibuat',
-                'time' => $created,
-                'note' => $s->offer_number ? 'No. ' . $s->offer_number : null,
-                'state' => 'done',
-            ],
-            [
-                'title' => 'Menunggu persetujuan customer',
-                'time' => $status['code'] === 'menunggu' ? 'Menunggu' : $created,
-                'note' => $status['code'] === 'menunggu' ? 'Silakan review & setujui penawaran' : null,
-                'state' => $status['code'] === 'menunggu' ? 'active' : ($status['code'] === 'ditolak' ? 'done' : 'done'),
-            ],
-        ];
+        $current = $s->relationLoaded('portalServiceStatus')
+            ? $s->portalServiceStatus
+            : $s->portalServiceStatus()->first();
 
-        if ($status['code'] === 'ditolak') {
-            $steps[] = [
-                'title' => 'Penawaran ditolak',
-                'time' => '-',
-                'note' => null,
-                'state' => 'done',
-            ];
-
-            return $steps;
+        if (! $current) {
+            $current = self::inferPortalStatus($s, $masters->values());
         }
 
-        $steps[] = [
-            'title' => 'Penawaran disetujui',
-            'time' => $approved ? ($created ?: '-') : '-',
-            'note' => null,
-            'state' => $approved ? 'done' : 'pending',
+        $currentCode = $current?->code;
+        $currentOrder = (int) ($current?->sort_order ?? 0);
+
+        $beforeUploadedAt = self::beforePhotoUploadedAt($s);
+        $hasBefore = $beforeUploadedAt !== null
+            || self::hasPhotos($s, 'before')
+            || ! empty($s->service_request_id);
+
+        $offerCreated = self::formatDateTime($s->created_at_offer ?: $s->created_at);
+        $inQueueOrLater = $currentOrder >= (int) ($masters->get('antrian')?->sort_order ?? 2)
+            || (int) $s->stage === 2;
+
+        // Explicit flow requested by product (not raw master sort order).
+        $flow = [
+            [
+                'code' => 'kendaraan_diterima',
+                'title' => $masters->get('kendaraan_diterima')?->name ?? 'Kendaraan Diterima',
+                'time' => $beforeUploadedAt ? self::formatDateTime($beforeUploadedAt) : '-',
+                'note' => $hasBefore ? 'Foto before diupload teknisi' : null,
+                'reached' => $hasBefore || $currentOrder >= 1,
+            ],
+            [
+                'code' => 'penawaran_dibuat',
+                'title' => 'Penawaran dibuat',
+                'time' => $offerCreated,
+                'note' => $s->offer_number ? 'No. ' . $s->offer_number : null,
+                'reached' => filled($s->offer_number) || filled($s->created_at_offer) || filled($s->created_at),
+            ],
+            [
+                'code' => 'antrian',
+                'title' => $masters->get('antrian')?->name ?? 'Antrian',
+                'time' => $inQueueOrLater ? self::formatDateTime($s->service_start_date) : '-',
+                'note' => $inQueueOrLater && $s->sr_number ? 'SR: ' . $s->sr_number : null,
+                'reached' => $inQueueOrLater,
+            ],
+            [
+                'code' => 'dikerjakan',
+                'title' => $masters->get('dikerjakan')?->name ?? 'Dikerjakan',
+                'time' => $currentOrder >= (int) ($masters->get('dikerjakan')?->sort_order ?? 3)
+                    ? self::formatDateTime($s->updated_at)
+                    : '-',
+                'note' => null,
+                'reached' => $currentOrder >= (int) ($masters->get('dikerjakan')?->sort_order ?? 3),
+            ],
+            [
+                'code' => 'finishgood',
+                'title' => $masters->get('finishgood')?->name ?? 'Finishgood',
+                'time' => $currentOrder >= (int) ($masters->get('finishgood')?->sort_order ?? 4)
+                    ? self::formatDateTime($s->handover_date ?: $s->invoice_handover_date ?: $s->updated_at)
+                    : '-',
+                'note' => null,
+                'reached' => $currentOrder >= (int) ($masters->get('finishgood')?->sort_order ?? 4)
+                    || $currentCode === 'finishgood',
+            ],
         ];
 
-        $steps[] = [
-            'title' => 'PO diupload',
-            'time' => $hasPo ? '-' : '-',
-            'note' => $hasPo ? 'PO: ' . $s->po_number : 'Menunggu upload PO',
-            'state' => $hasPo ? 'done' : ($approved ? 'active' : 'pending'),
-        ];
+        if (self::isQuotationRejected($s)) {
+            return [
+                [
+                    'title' => $flow[0]['title'],
+                    'time' => $flow[0]['time'],
+                    'note' => $flow[0]['note'],
+                    'state' => $flow[0]['reached'] ? 'done' : 'pending',
+                ],
+                [
+                    'title' => 'Penawaran dibuat',
+                    'time' => $offerCreated,
+                    'note' => $s->offer_number ? 'No. ' . $s->offer_number : null,
+                    'state' => 'done',
+                ],
+                [
+                    'title' => 'Penawaran ditolak',
+                    'time' => '-',
+                    'note' => null,
+                    'state' => 'done',
+                ],
+            ];
+        }
 
-        $steps[] = [
-            'title' => 'Pengerjaan bengkel',
-            'time' => $inWorkshop ? self::formatDateTime($s->service_start_date) : '-',
-            'note' => $s->sr_number ? 'SR: ' . $s->sr_number : null,
-            'state' => $hasAfter || $hasHandover ? 'done' : ($inWorkshop ? 'active' : 'pending'),
-        ];
+        $activeIndex = null;
+        foreach ($flow as $i => $step) {
+            if ($step['reached']) {
+                $activeIndex = $i;
+            }
+        }
 
-        $steps[] = [
-            'title' => 'Selesai / serah terima',
-            'time' => $hasHandover ? self::formatDateTime($s->handover_date ?: $s->invoice_handover_date) : '-',
-            'note' => null,
-            'state' => $hasHandover ? 'done' : ($hasAfter ? 'active' : 'pending'),
-        ];
+        $steps = [];
+        foreach ($flow as $i => $step) {
+            if (! $step['reached']) {
+                $state = 'pending';
+            } elseif ($step['code'] === 'finishgood') {
+                $state = 'done';
+            } elseif ($i === $activeIndex) {
+                $state = 'active';
+            } else {
+                $state = 'done';
+            }
+
+            $steps[] = [
+                'title' => $step['title'],
+                'time' => $step['time'] ?: '-',
+                'note' => $step['note'],
+                'state' => $state,
+            ];
+        }
 
         return $steps;
+    }
+
+    private static function beforePhotoUploadedAt(Service $s): mixed
+    {
+        if ($s->relationLoaded('beforePhotos')) {
+            return $s->beforePhotos->min('created_at');
+        }
+
+        if (empty($s->service_request_id)) {
+            return null;
+        }
+
+        return $s->beforePhotos()->min('created_at');
     }
 
     private static function formatDateTime(mixed $value): string

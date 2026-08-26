@@ -52,6 +52,7 @@ class QuotationController extends Controller
                 'serviceRequest',
                 'preparedBy',
                 'afterPhotos',
+                'beforePhotos',
                 'portalServiceStatus',
             ])
             ->findOrFail($id);
