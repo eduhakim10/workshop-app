@@ -46,21 +46,16 @@ class EditQuotations extends EditRecord
                     // (Prepared by / Location) — pastikan terisi saat pindah ke Service.
                     $quotation->applyQuotationDefaults();
 
-                    $antrianId = \App\Models\PortalServiceStatus::idByCode('antrian');
-                    if ($antrianId) {
-                        $quotation->portal_service_status_id = $antrianId;
-                    }
-
                     $itemsOffer = $quotation->items_offer;
 
                     // Kalau masih string JSON → decode
                     if (is_string($itemsOffer)) {
                         $itemsOffer = json_decode($itemsOffer, true);
                     }
-                    
+
                     $finalItems = [];
-                    
-                    foreach ($itemsOffer as $group) {
+
+                    foreach (($itemsOffer ?? []) as $group) {
                         if (isset($group['items']) && is_array($group['items'])) {
                             foreach ($group['items'] as $item) {
                                 $finalItems[] = $item;
@@ -69,24 +64,43 @@ class EditQuotations extends EditRecord
                             $finalItems[] = $group;
                         }
                     }
-                    
-                    // jangan encode, langsung assign array
+
                     // Reset items first to ensure DB recognizes the change when overwritten
                     $quotation->items = null;
                     $quotation->save();
 
-                    // Timpah dengan items final
+                    // Timpa dengan items final
                     $quotation->items = $finalItems;
+
+                    // Status Portal harus jadi Antrian saat Move to Service
+                    // (dari Kendaraan Diterima / kosong → Antrian). Set di akhir agar tidak tertimpa.
+                    $antrianId = \App\Models\PortalServiceStatus::idByCode('antrian');
+                    if (! $antrianId) {
+                        Notification::make()
+                            ->title('Status portal "Antrian" belum ada di master. Move to Service dibatalkan sebagian — cek Master Data → Status Service Portal.')
+                            ->danger()
+                            ->send();
+                    } else {
+                        $quotation->portal_service_status_id = $antrianId;
+                    }
+
                     $quotation->save();
 
-                 //   $this->notify('success', 'Quotation approved as service.');
-                 Notification::make()
-                    ->title('Quotation updated successfully')
-                    ->success()
-                    ->send();
+                    // Pastikan kolom status portal tersimpan (hindari race/form state menimpa)
+                    if ($antrianId) {
+                        \App\Models\Service::whereKey($quotation->id)->update([
+                            'portal_service_status_id' => $antrianId,
+                            'stage' => 2,
+                        ]);
+                    }
+
+                    Notification::make()
+                        ->title('Quotation updated successfully')
+                        ->success()
+                        ->send();
                     $this->redirect(ServiceResource::getUrl());
                 })
-                ->visible(fn () => in_array($this->record->stage, [1, 2])), 
+                ->visible(fn () => (int) $this->record->stage === 1), 
 
 
                  Action::make('Print Overview')
@@ -144,14 +158,22 @@ class EditQuotations extends EditRecord
                 ->action(function () {
                     $this->record->stage = 2;
                     $this->record->applyQuotationDefaults();
+
                     $antrianId = \App\Models\PortalServiceStatus::idByCode('antrian');
                     if ($antrianId) {
                         $this->record->portal_service_status_id = $antrianId;
                     }
                     $this->record->save();
 
+                    if ($antrianId) {
+                        \App\Models\Service::whereKey($this->record->id)->update([
+                            'portal_service_status_id' => $antrianId,
+                            'stage' => 2,
+                        ]);
+                    }
+
                     $this->notify('success', 'Quotation approved as service.');
-                    $this->redirect(ServiceResource::getUrl()); // Arahkan ke service list
+                    $this->redirect(ServiceResource::getUrl());
                 }),
                 Action::make('Print Overview')
             ->label('Print Overview')
