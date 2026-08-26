@@ -59,7 +59,11 @@
       <div style="width:65%;">
         <table style="border:none;">
           @php
-            $damages = $serviceRequest->damages->pluck('name')->toArray();
+            $damages = $serviceRequest->damages
+                ->map(fn ($d) => $d->pivot->damage_name ?: $d->name)
+                ->filter()
+                ->values()
+                ->toArray();
             $total = count($damages);
             if ($total <= 10) {
                 $damages = array_pad($damages, 10, '................');

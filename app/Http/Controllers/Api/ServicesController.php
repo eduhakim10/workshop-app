@@ -130,7 +130,9 @@ class ServicesController extends Controller
                     $damageId = (int) $damage['damage_id'];
                     $damageName = $damage['damage_name'] ?? null;
 
-                    // Use firstOrCreate to safely avoid duplicate inserts
+                    // Use firstOrCreate to safely avoid duplicate inserts.
+                    // Unique key is service_request_id+damage_id (type not unique),
+                    // so if a "before" row already exists, promote/update it for after.
                     $existing = ServicesRequestDamage::firstOrCreate(
                         [
                             'service_request_id' => $service->service_request_id,
@@ -142,9 +144,15 @@ class ServicesController extends Controller
                         ]
                     );
 
-                    // If record already existed but damage_name changed, update it
-                    if ($existing && $existing->wasRecentlyCreated === false && $damageName && $existing->damage_name !== $damageName) {
-                        $existing->update(['damage_name' => $damageName]);
+                    $updates = [];
+                    if ($existing->type !== 'after') {
+                        $updates['type'] = 'after';
+                    }
+                    if ($damageName && $existing->damage_name !== $damageName) {
+                        $updates['damage_name'] = $damageName;
+                    }
+                    if ($updates !== []) {
+                        $existing->update($updates);
                     }
                 }
             }

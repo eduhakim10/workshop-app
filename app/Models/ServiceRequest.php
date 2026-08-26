@@ -64,6 +64,7 @@ class ServiceRequest extends Model
         public function damages()
     {
         return $this->belongsToMany(Damage::class, 'services_request_damages')
+                    ->withPivot(['type', 'damage_name'])
                     ->withTimestamps();
     }
     // Relasi ke Vehicle
