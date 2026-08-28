@@ -381,6 +381,10 @@ class ServiceResource extends Resource
                     ->color(fn ($record) => $record->portalServiceStatus?->badge_color ?? 'gray')
                     ->placeholder('-')
                     ->toggleable(),
+                TextColumn::make('work_order_number')
+                    ->label('Work Order')
+                    ->searchable()
+                    ->placeholder('-'),
                 TextColumn::make('customer.name')->label('Customer')->searchable(),
                 TextColumn::make('vehicle.license_plate')->label('Nomor Polisi')->searchable(),
                 TextColumn::make('location.name')->label('Lokasi Pengerjaan'),
@@ -419,10 +423,6 @@ class ServiceResource extends Resource
                         default       => 'gray',
                     })
                     ->sortable(),
-                TextColumn::make('work_order_number')
-                    ->label('Work Order Number')
-                    ->searchable()
-                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 Filter::make('license_plate')
