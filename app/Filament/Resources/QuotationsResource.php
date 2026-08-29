@@ -339,29 +339,37 @@ class QuotationsResource extends Resource
                                                         return 'Rp ' . number_format($line['subtotal'], 2, ',', '.');
                                                     }),
                                             ])
-                                            ->columns(6)
+                                            ->columns([
+                                                'default' => 1,
+                                                'md' => 2,
+                                                'xl' => 3,
+                                                '2xl' => 6,
+                                            ])
                                             ->collapsible()
                                             ->defaultItems(1)
                                             ->columnSpan('full')
                                             ->required(),
                                     ])
-                                    ->columns(3)
+                                    ->columns([
+                                        'default' => 1,
+                                        'md' => 2,
+                                        'xl' => 3,
+                                    ])
                                     ->collapsible()
                                     ->defaultItems(1)
                                     ->columnSpanFull()
                                     ->required(),
                             ])->columnSpan([
                                 'default' => 1,
-                                'lg' => 8,
+                                'lg' => 10,
                             ]),
 
                             Forms\Components\View::make('filament.forms.components.notes-before-sticky')
                                 ->columnSpan([
                                     'default' => 1,
-                                    'lg' => 4,
+                                    'lg' => 2,
                                 ])
                                 ->extraAttributes([
-                                    // Mobile: notes di atas item; Desktop: tetap di kolom kanan
                                     'class' => 'order-first lg:order-none lg:sticky lg:top-24 lg:self-start',
                                 ]),
                         ]),
