@@ -227,6 +227,8 @@ class QuotationsResource extends Resource
 
                         Textarea::make('notes_before')
                             ->label('Notes Before')
+                            ->helperText('Acuan item penawaran — salinannya menempel di kanan section Item Penawaran.')
+                            ->id('quotation-notes-before-source')
                             ->afterStateHydrated(function ($state, $set, $record) {
                                 if (! $state && $record?->service_request_id) {
                                     $sr = \App\Models\ServiceRequest::find($record->service_request_id);
@@ -235,110 +237,134 @@ class QuotationsResource extends Resource
                             })
                             ->disabled()
                             ->dehydrated()
+                            ->extraFieldWrapperAttributes([
+                                'data-notes-before-field' => '1',
+                            ])
                             ->columnSpanFull(),
                     ]),
 
                 Forms\Components\Section::make('Item penawaran (wajib)')
-                    ->description('Minimal 1 group + 1 item. Field bertanda * merah wajib diisi.')
+                    ->description('Minimal 1 group + 1 item. Field bertanda * merah wajib diisi. Notes Before menempel di kanan sebagai acuan.')
+                    ->id('quotation-items-section')
                     ->schema([
-                        Repeater::make('items_offer')
-                            ->label('Service Groups')
-                            ->reactive()
-                            ->afterStateUpdated(fn (callable $get, callable $set) => self::recalcAndSet($get, $set))
-                            ->schema([
-                                Select::make('service_group_id')
-                                    ->label('Service Group')
-                                    ->options(ServiceGroup::pluck('name', 'id'))
-                                    ->searchable()
-                                    ->preload()
-                                    ->required(),
-
-                                TextInput::make('qty')
-                                    ->label('Group Qty')
-                                    ->numeric()
-                                    ->default(1)
-                                    ->required(),
-
-                                FormFields::applyRupiahMask(TextInput::make('price'))
-                                    ->label('Group Price')
-                                    ->disabled()
-                                    ->dehydrated()
-                                    ->helperText('Auto-calculated from items.'),
-
-                                Repeater::make('items')
-                                    ->label('Items')
+                        Forms\Components\Grid::make([
+                            'default' => 1,
+                            'lg' => 12,
+                        ])->schema([
+                            Forms\Components\Group::make([
+                                Repeater::make('items_offer')
+                                    ->label('Service Groups')
                                     ->reactive()
+                                    ->afterStateUpdated(fn (callable $get, callable $set) => self::recalcAndSet($get, $set))
                                     ->schema([
-                                        Select::make('category_item_id')
-                                            ->label('Item Category')
-                                            ->options(CategoryItem::pluck('name', 'id'))
-                                            ->reactive()
+                                        Select::make('service_group_id')
+                                            ->label('Service Group')
+                                            ->options(ServiceGroup::pluck('name', 'id'))
                                             ->searchable()
                                             ->preload()
                                             ->required(),
 
-                                        Select::make('item_id')
-                                            ->label('Item')
-                                            ->options(fn (callable $get) => $get('category_item_id')
-                                                ? Item::where('category_item_id', $get('category_item_id'))->pluck('name', 'id')
-                                                : [])
-                                            ->reactive()
-                                            ->afterStateUpdated(function ($state, callable $set) {
-                                                if ($state) {
-                                                    $item = Item::find($state);
-                                                    $set('sales_price', FormFields::formatRupiah($item?->sales_price));
-                                                }
-                                            })
-                                            ->searchable()
-                                            ->preload()
-                                            ->columnSpan(1)
-                                            ->required(),
-
-                                        FormFields::applyRupiahMask(TextInput::make('sales_price'))
-                                            ->label('Sales Price')
-                                            ->required(),
-
-                                        TextInput::make('quantity')
-                                            ->label('Quantity')
+                                        TextInput::make('qty')
+                                            ->label('Group Qty')
                                             ->numeric()
                                             ->default(1)
-                                            ->required()
+                                            ->required(),
+
+                                        FormFields::applyRupiahMask(TextInput::make('price'))
+                                            ->label('Group Price')
+                                            ->disabled()
+                                            ->dehydrated()
+                                            ->helperText('Auto-calculated from items.'),
+
+                                        Repeater::make('items')
+                                            ->label('Items')
                                             ->reactive()
-                                            ->columnSpan(1)
-                                            ->suffix(fn (callable $get) => optional(Item::find($get('item_id')))->unit ?? 'pcs'),
+                                            ->schema([
+                                                Select::make('category_item_id')
+                                                    ->label('Item Category')
+                                                    ->options(CategoryItem::pluck('name', 'id'))
+                                                    ->reactive()
+                                                    ->searchable()
+                                                    ->preload()
+                                                    ->required(),
 
-                                        TextInput::make('discount_percent')
-                                            ->label('Disc (%)')
-                                            ->numeric()
-                                            ->default(0)
-                                            ->minValue(0)
-                                            ->maxValue(100)
-                                            ->suffix('%')
-                                            ->reactive(),
+                                                Select::make('item_id')
+                                                    ->label('Item')
+                                                    ->options(fn (callable $get) => $get('category_item_id')
+                                                        ? Item::where('category_item_id', $get('category_item_id'))->pluck('name', 'id')
+                                                        : [])
+                                                    ->reactive()
+                                                    ->afterStateUpdated(function ($state, callable $set) {
+                                                        if ($state) {
+                                                            $item = Item::find($state);
+                                                            $set('sales_price', FormFields::formatRupiah($item?->sales_price));
+                                                        }
+                                                    })
+                                                    ->searchable()
+                                                    ->preload()
+                                                    ->columnSpan(1)
+                                                    ->required(),
 
-                                        Placeholder::make('line_subtotal')
-                                            ->label('Jumlah')
-                                            ->content(function (callable $get) {
-                                                $line = QuotationPricing::calcLine([
-                                                    'sales_price' => $get('sales_price'),
-                                                    'quantity' => $get('quantity'),
-                                                    'discount_percent' => $get('discount_percent'),
-                                                ]);
+                                                FormFields::applyRupiahMask(TextInput::make('sales_price'))
+                                                    ->label('Sales Price')
+                                                    ->required(),
 
-                                                return 'Rp ' . number_format($line['subtotal'], 2, ',', '.');
-                                            }),
+                                                TextInput::make('quantity')
+                                                    ->label('Quantity')
+                                                    ->numeric()
+                                                    ->default(1)
+                                                    ->required()
+                                                    ->reactive()
+                                                    ->columnSpan(1)
+                                                    ->suffix(fn (callable $get) => optional(Item::find($get('item_id')))->unit ?? 'pcs'),
+
+                                                TextInput::make('discount_percent')
+                                                    ->label('Disc (%)')
+                                                    ->numeric()
+                                                    ->default(0)
+                                                    ->minValue(0)
+                                                    ->maxValue(100)
+                                                    ->suffix('%')
+                                                    ->reactive(),
+
+                                                Placeholder::make('line_subtotal')
+                                                    ->label('Jumlah')
+                                                    ->content(function (callable $get) {
+                                                        $line = QuotationPricing::calcLine([
+                                                            'sales_price' => $get('sales_price'),
+                                                            'quantity' => $get('quantity'),
+                                                            'discount_percent' => $get('discount_percent'),
+                                                        ]);
+
+                                                        return 'Rp ' . number_format($line['subtotal'], 2, ',', '.');
+                                                    }),
+                                            ])
+                                            ->columns(6)
+                                            ->collapsible()
+                                            ->defaultItems(1)
+                                            ->columnSpan('full')
+                                            ->required(),
                                     ])
-                                    ->columns(6)
+                                    ->columns(3)
                                     ->collapsible()
                                     ->defaultItems(1)
-                                    ->columnSpan('full')
+                                    ->columnSpanFull()
                                     ->required(),
-                            ])
-                            ->columns(3)
-                            ->collapsible()
-                            ->defaultItems(1)
-                            ->columnSpan('full')
-                            ->required(),
+                            ])->columnSpan([
+                                'default' => 1,
+                                'lg' => 8,
+                            ]),
+
+                            Forms\Components\View::make('filament.forms.components.notes-before-sticky')
+                                ->columnSpan([
+                                    'default' => 1,
+                                    'lg' => 4,
+                                ])
+                                ->extraAttributes([
+                                    // Mobile: notes di atas item; Desktop: tetap di kolom kanan
+                                    'class' => 'order-first lg:order-none lg:sticky lg:top-24 lg:self-start',
+                                ]),
+                        ]),
                     ]),
 
                 Forms\Components\Section::make('PPN & total (wajib)')
