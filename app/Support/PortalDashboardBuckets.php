@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\PortalServiceStatus;
 use App\Models\Service;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -37,13 +38,27 @@ class PortalDashboardBuckets
             ->whereIn('quotation_status', ['Draft', 'Sent', 'Revised']);
     }
 
+    /**
+     * Sedang diperbaiki = status portal Dikerjakan (bukan Antrian).
+     * Antrian = sudah masuk workshop tapi belum dikerjakan.
+     */
     public static function applySedangDiperbaiki(Builder $query): Builder
     {
-        return $query
+        $dikerjakanId = PortalServiceStatus::idByCode('dikerjakan');
+
+        $query
             ->where('stage', 2)
             ->whereNotNull('sr_number')
-            ->where('sr_number', '!=', '')
-            ->whereDoesntHave('afterPhotos');
+            ->where('sr_number', '!=', '');
+
+        if ($dikerjakanId) {
+            return $query->where('portal_service_status_id', $dikerjakanId);
+        }
+
+        return $query->whereHas(
+            'portalServiceStatus',
+            fn (Builder $q) => $q->where('code', 'dikerjakan')
+        );
     }
 
     public static function applySudahDiperbaiki(Builder $query): Builder
@@ -62,13 +77,26 @@ class PortalDashboardBuckets
         });
     }
 
+    /**
+     * Workshop belum selesai (Antrian / Dikerjakan / belum ada foto after).
+     * Dipakai agar Antrian tetap muncul di tab Semua.
+     */
+    public static function applyWorkshopBelumSelesai(Builder $query): Builder
+    {
+        return $query
+            ->where('stage', 2)
+            ->whereNotNull('sr_number')
+            ->where('sr_number', '!=', '')
+            ->whereDoesntHave('afterPhotos');
+    }
+
     /** Union of all dashboard buckets (for "Semua" list). */
     public static function applyAny(Builder $query): Builder
     {
         return $query->where(function (Builder $outer) {
             $outer
                 ->where(fn (Builder $q) => self::applySedangMenunggu($q))
-                ->orWhere(fn (Builder $q) => self::applySedangDiperbaiki($q))
+                ->orWhere(fn (Builder $q) => self::applyWorkshopBelumSelesai($q))
                 ->orWhere(fn (Builder $q) => self::applySudahDiperbaiki($q))
                 ->orWhere(fn (Builder $q) => self::applyBelumAdaPo($q));
         });
@@ -95,10 +123,12 @@ class PortalDashboardBuckets
             ? $s->afterPhotos->isNotEmpty()
             : $s->afterPhotos()->exists();
 
+        $statusCode = self::portalStatusCode($s);
+
         return [
             self::SEDANG_MENUNGGU => (int) $s->stage === 1
                 && in_array((string) $s->quotation_status, ['Draft', 'Sent', 'Revised'], true),
-            self::SEDANG_DIPERBAIKI => (int) $s->stage === 2 && $hasSr && ! $hasAfter,
+            self::SEDANG_DIPERBAIKI => (int) $s->stage === 2 && $hasSr && $statusCode === 'dikerjakan',
             self::SUDAH_DIPERBAIKI => (int) $s->stage === 2 && $hasSr && $hasAfter,
             self::BELUM_ADA_PO => ! filled($s->po_file),
         ];
@@ -118,5 +148,14 @@ class PortalDashboardBuckets
             self::SUDAH_DIPERBAIKI => self::applySudahDiperbaiki($base())->count(),
             self::BELUM_ADA_PO => self::applyBelumAdaPo($base())->count(),
         ];
+    }
+
+    private static function portalStatusCode(Service $s): string
+    {
+        if ($s->relationLoaded('portalServiceStatus') && $s->portalServiceStatus) {
+            return (string) $s->portalServiceStatus->code;
+        }
+
+        return (string) (ServicePresenter::portalStatusBadge($s)['code'] ?? '');
     }
 }
