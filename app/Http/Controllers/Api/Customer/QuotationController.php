@@ -117,6 +117,9 @@ class QuotationController extends Controller
                 'totals' => $totals,
                 'timeline' => ServicePresenter::quotationTimeline($s),
                 'items' => $s->items_offer ?: $s->items,
+                // Print before/after (same as dashboard) needs an SR + photos
+                'can_print_before' => filled($s->service_request_id) && $s->beforePhotos->isNotEmpty(),
+                'can_print_after' => filled($s->service_request_id) && $s->afterPhotos->isNotEmpty(),
             ],
         ]);
     }

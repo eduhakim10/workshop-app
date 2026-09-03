@@ -79,7 +79,7 @@ class ServiceController extends Controller
     private function findOwnedService(Request $request, int $id): Service
     {
         return Service::where('customer_id', $request->user()->customer_id)
-            ->where('stage', 2)
+            ->whereIn('stage', [1, 2])
             ->findOrFail($id);
     }
 }
