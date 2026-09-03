@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Customer;
 use App\Http\Controllers\Controller;
 use App\Models\Service;
 use App\Services\SettingService;
+use App\Support\PortalDashboardBuckets;
 use App\Support\ServicePresenter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -33,36 +34,10 @@ class DashboardController extends Controller
         $from = $period['from'];
         $to = $period['to'];
 
+        $stats = PortalDashboardBuckets::counts($customerId, $from, $to);
+
         $base = fn () => Service::where('customer_id', $customerId)
             ->inPortalPeriod($from, $to);
-
-        // Sedang diperbaiki = job workshop (stage 2) yang foto after-nya belum diupload + punya SR
-        $sedangDiperbaiki = (clone $base())
-            ->where('stage', 2)
-            ->whereNotNull('sr_number')
-            ->where('sr_number', '!=', '')
-            ->whereDoesntHave('afterPhotos')
-            ->count();
-
-        $sedangMenunggu = (clone $base())
-            ->where('stage', 1)
-            ->whereIn('quotation_status', ['Draft', 'Sent', 'Revised'])
-            ->count();
-
-        // Sudah diperbaiki = sama seperti sedang diperbaiki, tapi foto after sudah diupload
-        $sudahDiperbaiki = (clone $base())
-            ->where('stage', 2)
-            ->whereNotNull('sr_number')
-            ->where('sr_number', '!=', '')
-            ->whereHas('afterPhotos')
-            ->count();
-
-        // Belum ada PO = customer belum upload file PO via portal
-        $belumAdaPo = (clone $base())
-            ->where(function ($q) {
-                $q->whereNull('po_file')->orWhere('po_file', '');
-            })
-            ->count();
 
         $progress = (clone $base())
             ->where('stage', 2)
@@ -96,12 +71,7 @@ class DashboardController extends Controller
             ->map(fn (Service $s) => ServicePresenter::quotationDashboardRow($s));
 
         return response()->json([
-            'stats' => [
-                'sedang_menunggu' => $sedangMenunggu,
-                'sedang_diperbaiki' => $sedangDiperbaiki,
-                'sudah_diperbaiki' => $sudahDiperbaiki,
-                'belum_ada_po' => $belumAdaPo,
-            ],
+            'stats' => $stats,
             'services' => $progress,
             'quotations' => $quotations,
             'period' => $period,

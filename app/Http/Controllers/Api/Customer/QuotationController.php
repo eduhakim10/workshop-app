@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api\Customer;
 
 use App\Http\Controllers\Controller;
 use App\Models\Service;
+use App\Services\SettingService;
+use App\Support\PortalDashboardBuckets;
 use App\Support\ServicePresenter;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
@@ -16,27 +18,52 @@ class QuotationController extends Controller
 {
     /**
      * List quotations for the authenticated customer.
-     * Only rows with filled sr_number (keeps payload small for the portal).
+     * Scoped to the same portal period + dashboard buckets so tab counts match the dashboard.
+     *
+     * Query: from / to (Y-m-d) optional — same default lookback as dashboard.
      */
-    public function index(Request $request): JsonResponse
+    public function index(Request $request, SettingService $settings): JsonResponse
     {
+        $request->validate([
+            'from' => ['nullable', 'date'],
+            'to' => ['nullable', 'date'],
+        ]);
+
+        $period = $settings->resolveDashboardPeriod(
+            $request->query('from'),
+            $request->query('to'),
+        );
+
         $customerId = $request->user()->customer_id;
+        $from = $period['from'];
+        $to = $period['to'];
+        $counts = PortalDashboardBuckets::counts($customerId, $from, $to);
 
         $items = Service::where('customer_id', $customerId)
-            ->whereIn('stage', [1, 2])
-            ->whereNotNull('sr_number')
-            ->where('sr_number', '!=', '')
+            ->inPortalPeriod($from, $to)
+            ->tap(fn ($q) => PortalDashboardBuckets::applyAny($q))
             ->with([
                 'vehicle:id,brand,model,license_plate',
                 'categoryService:id,name',
                 'portalServiceStatus',
+                'beforePhotos',
+                'afterPhotos',
             ])
             ->orderByDesc('created_at_offer')
             ->orderByDesc('created_at')
             ->get()
-            ->map(fn (Service $s) => $this->row($s));
+            ->map(function (Service $s) {
+                $row = $this->row($s);
+                $row['buckets'] = PortalDashboardBuckets::flags($s);
 
-        return response()->json(['data' => $items]);
+                return $row;
+            });
+
+        return response()->json([
+            'data' => $items,
+            'counts' => $counts,
+            'period' => $period,
+        ]);
     }
 
     public function show(Request $request, int $id): JsonResponse
