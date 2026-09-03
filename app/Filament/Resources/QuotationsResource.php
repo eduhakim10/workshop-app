@@ -314,7 +314,8 @@ class QuotationsResource extends Resource
                                                     ->numeric()
                                                     ->default(1)
                                                     ->required()
-                                                    ->reactive()
+                                                    // Sync after typing (same fix as sales_price) — reactive() drops digits mid-type.
+                                                    ->live(onBlur: true)
                                                     ->columnSpan(1)
                                                     ->suffix(fn (callable $get) => optional(Item::find($get('item_id')))->unit ?? 'pcs'),
 
@@ -325,7 +326,7 @@ class QuotationsResource extends Resource
                                                     ->minValue(0)
                                                     ->maxValue(100)
                                                     ->suffix('%')
-                                                    ->reactive(),
+                                                    ->live(onBlur: true),
 
                                                 Placeholder::make('line_subtotal')
                                                     ->label('Jumlah')
